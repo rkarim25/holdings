@@ -875,6 +875,9 @@
 
   // --- SAVE / LOAD DATA ---
   async function saveState() {
+    // While the passcode is bypassed there is no key to encrypt with, and
+    // re-locking here would bounce the user back to the lock screen. No-op.
+    if (DEV_BYPASS_PASSCODE) return;
     if (!sessionPasscode) {
       lockPage();
       return;
