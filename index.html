@@ -939,6 +939,9 @@
       }
       document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('appContainer').style.display = 'block';
+      // Hide the lock button while the passcode is bypassed (it would re-lock).
+      const lockBtn = document.getElementById('btnLockPage');
+      if (lockBtn) lockBtn.style.display = 'none';
       syncStateToDOM();
       fetchLivePrices();
       fetchHistoricalPrices();
