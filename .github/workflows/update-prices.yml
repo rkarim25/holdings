@@ -1,0 +1,52 @@
+name: Update holdings prices
+
+on:
+  schedule:
+    # Every 30 min during UK LSE regular session (08:00-16:30 Europe/London, Mon-Fri).
+    # UTC hours 07-16 cover BST open (07:00 UTC = 08:00 BST) through 16:30 GMT close.
+    - cron: "*/30 7-16 * * 1-5"
+    # After US cash equity close (21:00 / 22:00 UTC handles EDT/EST).
+    - cron: "0 21 * * 1-5"
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-prices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      # refresh_holdings_prices.py lives in the public rkarim25/Strategy repo
+      # (stdlib-only, no pip installs). Run from this repo's root it writes
+      # holdings_prices.json and holdings_historical_prices.json here; its
+      # extra write into holdings_web/ fails harmlessly (caught in-script).
+      - name: Check out rkarim25/Strategy for the refresh script
+        uses: actions/checkout@v6
+        with:
+          repository: rkarim25/Strategy
+          path: strategy
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Refresh holdings prices
+        run: python strategy/refresh_holdings_prices.py
+
+      - name: Commit refreshed prices
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add holdings_prices.json holdings_historical_prices.json
+          if git diff --cached --quiet; then
+            echo "No price changes to commit."
+          else
+            git commit -m "Update holdings prices"
+            git push || (git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push)
+          fi
