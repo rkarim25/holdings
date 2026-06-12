@@ -192,6 +192,21 @@
       color: var(--accent);
     }
 
+    /* In-header column filters for the transaction log */
+    .ledger-col-filter {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: 400;
+      padding: 3px 4px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+    }
+
     .account-header-row {
       background: rgba(0, 113, 227, 0.04);
       border-bottom: 1px solid rgba(0, 113, 227, 0.12);
@@ -661,6 +676,27 @@
     <div id="chartCanvasWrap" style="position: relative; height: 320px; width: 100%; user-select: none;">
       <canvas id="equityPerformanceChart" style="touch-action: none; cursor: grab; display: block;"></canvas>
     </div>
+
+    <!-- Returns summary for the selected period & accounts -->
+    <div style="margin-top: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--text);">Returns over selected period</h4>
+        <span class="small" id="returnsRangeNote" style="color: var(--muted);"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 34%;">Account</th>
+              <th style="text-align: right;" title="Time-weighted return over the selected dates">Holding-period return</th>
+              <th style="text-align: right;" title="Holding-period return scaled to a yearly rate">Annualised return</th>
+              <th style="text-align: right;">Equity value (end)</th>
+            </tr>
+          </thead>
+          <tbody id="returnsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <!-- TRANSACTION LEDGER CARD -->
@@ -675,43 +711,50 @@
     </div>
 
     <div id="ledgerContent" style="display: none; margin-top: 16px;">
-      <!-- Filters -->
+      <!-- Date range filter -->
       <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px;">
         <div>
-          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Account</label>
-          <select id="ledgerFilterAccount" class="holding-input" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; min-width: 170px;"></select>
+          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">From</label>
+          <input type="date" id="ledgerFilterFrom" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px;" />
         </div>
         <div>
-          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Type</label>
-          <select id="ledgerFilterCategory" class="holding-input" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; min-width: 150px;">
-            <option value="all">All types</option>
-            <option value="Buy">Buy</option>
-            <option value="Sell">Sell</option>
-            <option value="Deposit">Deposit</option>
-            <option value="Withdrawal">Withdrawal</option>
-            <option value="Fee">Fee</option>
-            <option value="Interest">Interest</option>
-            <option value="Dividend">Dividend</option>
-            <option value="Transfer In">Transfer In</option>
-          </select>
+          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">To</label>
+          <input type="date" id="ledgerFilterTo" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px;" />
         </div>
+        <button type="button" class="secondary" onclick="clearLedgerFilters()" style="padding: 7px 12px; font-size: 12px; box-shadow: none; border-radius: 6px;">Clear filters</button>
       </div>
 
       <!-- Summary bar for the current filter -->
       <div id="ledgerSummaryBar" class="small" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; color: var(--muted);"></div>
 
       <!-- Table wrap for ledger -->
-      <div class="table-wrap" style="margin-bottom: 16px; max-height: 360px; overflow-y: auto;">
+      <div class="table-wrap" style="margin-bottom: 16px; max-height: 420px; overflow-y: auto;">
         <table>
           <thead>
             <tr>
-              <th style="width: 12%;">Date</th>
-              <th style="width: 22%;">Account</th>
-              <th style="width: 13%;">Type</th>
-              <th style="width: 12%;">Ticker</th>
-              <th style="width: 14%; text-align: right;">Units</th>
-              <th style="width: 17%; text-align: right;">Amount (£)</th>
-              <th style="width: 8%; text-align: center;">Action</th>
+              <th style="width: 11%;">Date</th>
+              <th style="width: 26%;">Account
+                <select id="ledgerFilterAccount" class="ledger-col-filter" onchange="setLedgerFilter()"></select>
+              </th>
+              <th style="width: 15%;">Type
+                <select id="ledgerFilterCategory" class="ledger-col-filter" onchange="setLedgerFilter()">
+                  <option value="all">All</option>
+                  <option value="Buy">Buy</option>
+                  <option value="Sell">Sell</option>
+                  <option value="Deposit">Deposit</option>
+                  <option value="Withdrawal">Withdrawal</option>
+                  <option value="Fee">Fee</option>
+                  <option value="Interest">Interest</option>
+                  <option value="Dividend">Dividend</option>
+                  <option value="Transfer In">Transfer In</option>
+                </select>
+              </th>
+              <th style="width: 14%;">Ticker
+                <select id="ledgerFilterTicker" class="ledger-col-filter" onchange="setLedgerFilter()"></select>
+              </th>
+              <th style="width: 11%; text-align: right;">Units</th>
+              <th style="width: 14%; text-align: right;">Amount (£)</th>
+              <th style="width: 7%; text-align: center;">Action</th>
             </tr>
           </thead>
           <tbody id="ledgerTableBody">
@@ -2340,6 +2383,27 @@
     updateChart();
   };
 
+  // Vertical crosshair line at the hovered point, for reading the x/y axes.
+  const crosshairPlugin = {
+    id: 'crosshair',
+    afterDraw(chart) {
+      const els = chart.tooltip && chart.tooltip.getActiveElements ? chart.tooltip.getActiveElements() : [];
+      if (!els.length) return;
+      const x = els[0].element.x;
+      const { top, bottom } = chart.chartArea;
+      const c = chart.ctx;
+      c.save();
+      c.beginPath();
+      c.moveTo(x, top);
+      c.lineTo(x, bottom);
+      c.lineWidth = 1;
+      c.strokeStyle = 'rgba(0,0,0,0.28)';
+      c.setLineDash([4, 3]);
+      c.stroke();
+      c.restore();
+    }
+  };
+
   function initChart() {
     const ctx = document.getElementById('equityPerformanceChart').getContext('2d');
     if (!ctx) return;
@@ -2375,6 +2439,8 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        hover: { mode: 'index', intersect: false },
         plugins: {
           legend: {
             display: true,
@@ -2430,9 +2496,10 @@
             }
           }
         }
-      }
+      },
+      plugins: [crosshairPlugin]
     });
-    
+
     updateChart();
   }
 
@@ -2811,6 +2878,53 @@
     performanceChart.data.labels = chartLabels;
     performanceChart.data.datasets = [totalDataset, ...extraDatasets];
     performanceChart.update();
+    renderReturnsTable(activeDates);
+  }
+
+  // Time-weighted return, annualised return and end equity for a set of
+  // accounts over the active (selected-range) dates.
+  function computeRangeStats(accounts, activeDates) {
+    if (!activeDates.length) return { hpr: 0, annualised: 0, equity: 0 };
+    let twr = 1, prev = 0, equity = 0;
+    activeDates.forEach((d, i) => {
+      const v = calculateHoldingsValue(getHoldingsOnDate(d, accounts, state.transactions), d, historicalPriceDb);
+      equity = v;
+      const todays = state.transactions.filter(t => t.date === d && accounts.includes(t.account));
+      let ncf = 0;
+      todays.forEach(t => { if (t.type === 'inflow') ncf += t.amount; else if (t.type === 'outflow') ncf -= t.amount; });
+      let dr = 0;
+      if (i > 0 && prev > 0) dr = (v - ncf) / prev - 1;
+      twr *= (1 + dr);
+      prev = v;
+    });
+    const hpr = twr - 1;
+    const days = Math.max(1, (new Date(activeDates[activeDates.length - 1]) - new Date(activeDates[0])) / 86400000);
+    const annualised = Math.pow(1 + hpr, 365.25 / days) - 1;
+    return { hpr, annualised, equity };
+  }
+
+  function renderReturnsTable(activeDates) {
+    const tbody = document.getElementById('returnsTableBody');
+    if (!tbody) return;
+    const note = document.getElementById('returnsRangeNote');
+    if (note && activeDates.length) {
+      const f = d => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+      const days = Math.round((new Date(activeDates[activeDates.length - 1]) - new Date(activeDates[0])) / 86400000);
+      note.textContent = `${f(activeDates[0])} → ${f(activeDates[activeDates.length - 1])} · ${days} days`;
+    }
+    const pct = v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
+    const col = v => v >= 0 ? 'var(--good)' : 'var(--bad)';
+    const rowHtml = (label, s, strong) => `<tr${strong ? ' style="border-top:2px solid var(--line); font-weight:700;"' : ''}>
+        <td>${label}</td>
+        <td style="text-align:right; color:${col(s.hpr)}; font-variant-numeric:tabular-nums;">${pct(s.hpr)}</td>
+        <td style="text-align:right; color:${col(s.annualised)}; font-variant-numeric:tabular-nums;">${pct(s.annualised)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${formatGBP(s.equity)}</td>
+      </tr>`;
+    let html = selectedChartAccounts.map(acct =>
+      rowHtml(ACCOUNTS[acct] ? ACCOUNTS[acct].name : acct, computeRangeStats([acct], activeDates), false)
+    ).join('');
+    html += rowHtml('Total (selected)', computeRangeStats(selectedChartAccounts, activeDates), true);
+    tbody.innerHTML = html || `<tr><td colspan="4" style="text-align:center;color:var(--muted);">Select accounts to see returns.</td></tr>`;
   }
 
   // --- LEDGER PANEL & EDITOR ---
@@ -2865,10 +2979,24 @@
 
   let ledgerFilterAccount = 'all';
   let ledgerFilterCategory = 'all';
+  let ledgerFilterTicker = 'all';
+  let ledgerFilterFrom = '';
+  let ledgerFilterTo = '';
 
   window.setLedgerFilter = function () {
     ledgerFilterAccount = document.getElementById('ledgerFilterAccount').value;
     ledgerFilterCategory = document.getElementById('ledgerFilterCategory').value;
+    ledgerFilterTicker = document.getElementById('ledgerFilterTicker').value;
+    ledgerFilterFrom = document.getElementById('ledgerFilterFrom').value;
+    ledgerFilterTo = document.getElementById('ledgerFilterTo').value;
+    renderLedgerTable();
+  };
+
+  window.clearLedgerFilters = function () {
+    ['ledgerFilterAccount', 'ledgerFilterCategory', 'ledgerFilterTicker'].forEach(id => { const e = document.getElementById(id); if (e) e.value = 'all'; });
+    ['ledgerFilterFrom', 'ledgerFilterTo'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    ledgerFilterAccount = 'all'; ledgerFilterCategory = 'all'; ledgerFilterTicker = 'all';
+    ledgerFilterFrom = ''; ledgerFilterTo = '';
     renderLedgerTable();
   };
 
@@ -2885,10 +3013,24 @@
       acctSel.innerHTML = opts;
       acctSel.dataset.filled = '1';
     }
+    // Populate the ticker filter from the distinct tickers present.
+    const tkSel = document.getElementById('ledgerFilterTicker');
+    if (tkSel) {
+      const tickers = [...new Set(state.transactions.map(t => t.ticker).filter(Boolean))].sort();
+      const want = 'all|' + tickers.join('|');
+      if (tkSel.dataset.sig !== want) {
+        tkSel.innerHTML = '<option value="all">All</option>' + tickers.map(tk => `<option value="${tk}">${tk}</option>`).join('');
+        tkSel.dataset.sig = want;
+        tkSel.value = ledgerFilterTicker;
+      }
+    }
 
     let rows = [...state.transactions].sort((a, b) => b.date.localeCompare(a.date));
     if (ledgerFilterAccount !== 'all') rows = rows.filter(t => t.account === ledgerFilterAccount);
     if (ledgerFilterCategory !== 'all') rows = rows.filter(t => categorizeTx(t) === ledgerFilterCategory);
+    if (ledgerFilterTicker !== 'all') rows = rows.filter(t => t.ticker === ledgerFilterTicker);
+    if (ledgerFilterFrom) rows = rows.filter(t => t.date >= ledgerFilterFrom);
+    if (ledgerFilterTo) rows = rows.filter(t => t.date <= ledgerFilterTo);
 
     if (summary) summary.textContent = `${state.transactions.length} records`;
 
