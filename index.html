@@ -1884,7 +1884,12 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14, font: { family: 'Outfit', size: 11, weight: '500' } }
+          },
           tooltip: {
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             titleColor: '#1d1d1f',
@@ -1898,11 +1903,12 @@
             bodyFont: { family: 'Outfit', size: 13 },
             callbacks: {
               label: function(context) {
+                const name = context.dataset.label || '';
                 const val = context.parsed.y;
                 if (chartMode === 'value') {
-                  return ' Value: ' + formatGBP(val);
+                  return ` ${name}: ` + formatGBP(val);
                 } else {
-                  return ' Return: ' + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+                  return ` ${name}: ` + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
                 }
               }
             }
@@ -2195,11 +2201,45 @@
     }
   };
 
+  // Distinct colours for the per-account breakdown lines.
+  const ACCOUNT_LINE_COLORS = ['#34c759', '#ff9500', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#30b0c7'];
+
+  // Compute the chart series (value or cumulative TWR %) for a set of accounts.
+  function computeSeriesData(accounts, activeDates) {
+    const data = [];
+    if (chartMode === 'value') {
+      activeDates.forEach(date => {
+        const holdings = getHoldingsOnDate(date, accounts, state.transactions);
+        data.push(calculateHoldingsValue(holdings, date, historicalPriceDb));
+      });
+    } else {
+      let cumulativeTWR = 1.0;
+      let prevValue = 0;
+      activeDates.forEach((date, idx) => {
+        const holdings = getHoldingsOnDate(date, accounts, state.transactions);
+        const value = calculateHoldingsValue(holdings, date, historicalPriceDb);
+        const todaysTxs = state.transactions.filter(t => t.date === date && accounts.includes(t.account));
+        let netCashFlow = 0;
+        todaysTxs.forEach(t => {
+          if (t.type === 'inflow') netCashFlow += t.amount;
+          else if (t.type === 'outflow') netCashFlow -= t.amount;
+        });
+        let dailyReturn = 0;
+        if (idx > 0 && prevValue > 0) dailyReturn = (value - netCashFlow) / prevValue - 1;
+        cumulativeTWR = cumulativeTWR * (1 + dailyReturn);
+        data.push((cumulativeTWR - 1) * 100);
+        prevValue = value;
+      });
+    }
+    return data;
+  }
+
   function updateChart() {
     if (!performanceChart || !historicalPriceDb) return;
     
     if (selectedChartAccounts.length === 0) {
       performanceChart.data.labels = [];
+      performanceChart.data.datasets = [performanceChart.data.datasets[0]];
       performanceChart.data.datasets[0].data = [];
       performanceChart.update();
       return;
@@ -2232,57 +2272,48 @@
 
     if (activeDates.length === 0) {
       performanceChart.data.labels = [];
+      performanceChart.data.datasets = [performanceChart.data.datasets[0]];
       performanceChart.data.datasets[0].data = [];
       performanceChart.update();
       return;
     }
     
-    const chartLabels = [];
-    const chartData = [];
-    
-    if (chartMode === 'value') {
-      activeDates.forEach(date => {
-        const holdings = getHoldingsOnDate(date, selectedChartAccounts, state.transactions);
-        const value = calculateHoldingsValue(holdings, date, historicalPriceDb);
-        
-        const displayDate = new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
-        chartLabels.push(displayDate);
-        chartData.push(value);
-      });
-      performanceChart.data.datasets[0].label = 'Portfolio Value (£)';
-    } else {
-      let cumulativeTWR = 1.0;
-      let prevValue = 0;
-      
-      activeDates.forEach((date, idx) => {
-        const holdings = getHoldingsOnDate(date, selectedChartAccounts, state.transactions);
-        const value = calculateHoldingsValue(holdings, date, historicalPriceDb);
-        
-        const todaysTxs = state.transactions.filter(t => t.date === date && selectedChartAccounts.includes(t.account));
-        let netCashFlow = 0;
-        todaysTxs.forEach(t => {
-          if (t.type === 'inflow') netCashFlow += t.amount;
-          else if (t.type === 'outflow') netCashFlow -= t.amount;
+    const chartLabels = activeDates.map(date =>
+      new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
+    );
+
+    // Primary line: total of all selected accounts.
+    const totalDataset = performanceChart.data.datasets[0];
+    totalDataset.data = computeSeriesData(selectedChartAccounts, activeDates);
+    totalDataset.label = 'Total';
+
+    // Breakdown lines: each selected account on its own (dashed, lighter).
+    // Only shown when more than one account is selected (otherwise the single
+    // account already equals the total).
+    const extraDatasets = [];
+    if (selectedChartAccounts.length > 1) {
+      selectedChartAccounts.forEach((acct, i) => {
+        const color = ACCOUNT_LINE_COLORS[i % ACCOUNT_LINE_COLORS.length];
+        extraDatasets.push({
+          label: (ACCOUNTS[acct] && ACCOUNTS[acct].name) || acct,
+          data: computeSeriesData([acct], activeDates),
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 1.5,
+          borderDash: [5, 4],
+          fill: false,
+          tension: 0.15,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointBackgroundColor: color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1
         });
-        
-        let dailyReturn = 0;
-        if (idx > 0 && prevValue > 0) {
-          dailyReturn = (value - netCashFlow) / prevValue - 1;
-        }
-        
-        cumulativeTWR = cumulativeTWR * (1 + dailyReturn);
-        
-        const displayDate = new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
-        chartLabels.push(displayDate);
-        chartData.push((cumulativeTWR - 1) * 100);
-        
-        prevValue = value;
       });
-      performanceChart.data.datasets[0].label = 'Portfolio Return (%)';
     }
-    
+
     performanceChart.data.labels = chartLabels;
-    performanceChart.data.datasets[0].data = chartData;
+    performanceChart.data.datasets = [totalDataset, ...extraDatasets];
     performanceChart.update();
   }
 
