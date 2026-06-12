@@ -1961,6 +1961,7 @@
   let historicalPriceDb = null;
   let performanceChart = null;
   let chartMode = 'value'; // 'value' or 'percent'
+  let chartActiveDates = []; // ISO dates currently plotted (for tooltip annualising)
   let chartRange = '1y'; // '3m', '6m', '1y', 'all'
   let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba', 'saba_isa', 'nameer_isa', 'saba_sipp', 'reza_lisa', 'saba_lisa'];
   let displayStartDate = null;
@@ -2772,9 +2773,17 @@
                 const val = context.parsed.y;
                 if (chartMode === 'value') {
                   return ` ${name}: ` + formatGBP(val);
-                } else {
-                  return ` ${name}: ` + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
                 }
+                let s = ` ${name}: ` + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+                // Annualise the holding-period return up to the hovered point.
+                if (chartActiveDates && chartActiveDates.length > 1) {
+                  const days = (new Date(chartActiveDates[context.dataIndex]) - new Date(chartActiveDates[0])) / 86400000;
+                  if (days >= 1) {
+                    const ann = (Math.pow(1 + val / 100, 365.25 / days) - 1) * 100;
+                    s += ` (${ann >= 0 ? '+' : ''}${ann.toFixed(2)}% p.a.)`;
+                  }
+                }
+                return s;
               }
             }
           }
@@ -3139,6 +3148,7 @@
     }
     
     const activeDates = dates.filter(d => d >= displayStartDate && d <= displayEndDate);
+    chartActiveDates = activeDates;
 
     if (activeDates.length === 0) {
       performanceChart.data.labels = [];
