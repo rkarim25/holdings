@@ -494,6 +494,51 @@
       color: var(--bad);
     }
 
+    /* Discreet row options (kebab) menu */
+    .row-menu-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 7px;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .row-menu-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text);
+    }
+    .row-menu {
+      position: absolute;
+      z-index: 1500;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+      padding: 5px;
+      min-width: 150px;
+    }
+    .row-menu button {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .row-menu button:hover { background: rgba(0, 0, 0, 0.05); }
+    .row-menu button.danger { color: var(--bad); }
+    .row-menu button.danger:hover { background: var(--bad-soft); }
+
     /* Lock Screen Layout */
     #lockScreen {
       position: fixed;
@@ -1444,12 +1489,12 @@
     const accountGain = accountTotalVal - accountTotalCost;
     const accountGainPct = accountTotalCost > 0 ? (accountGain / accountTotalCost) * 100 : 0;
 
-    // Update account subtotal cells in DOM
-    const subtotalTr = document.getElementById(`account-subtotal-${acct}`);
-    if (subtotalTr) {
-      subtotalTr.querySelector('.account-subtotal-val-cell').textContent = formatGBP(accountTotalVal);
-      subtotalTr.querySelector('.account-subtotal-cost-cell').textContent = formatGBP(accountTotalCost);
-      const gainCell = subtotalTr.querySelector('.account-subtotal-gain-cell');
+    // Update the account header's inline totals in the DOM
+    const headerTr = document.getElementById(`account-header-${acct}`);
+    if (headerTr) {
+      headerTr.querySelector('.acct-hdr-val').textContent = formatGBP(accountTotalVal);
+      headerTr.querySelector('.acct-hdr-cost').textContent = formatGBP(accountTotalCost);
+      const gainCell = headerTr.querySelector('.acct-hdr-gain');
       gainCell.textContent = `${accountGain >= 0 ? '+' : ''}${formatGBP(accountGain)} (${accountGainPct.toFixed(1)}%)`;
       gainCell.style.color = accountGain >= 0 ? 'var(--good)' : 'var(--bad)';
     }
@@ -1583,6 +1628,46 @@
     if (ledgerExpanded) renderLedgerTable();
   };
 
+  // Discreet per-row options menu (Edit / Delete) — keeps destructive
+  // actions one step removed to avoid accidental deletes.
+  let _rowMenuEl = null;
+  window.closeRowMenu = function () {
+    if (_rowMenuEl) { _rowMenuEl.remove(); _rowMenuEl = null; document.removeEventListener('mousedown', onDocCloseMenu); }
+  };
+  function onDocCloseMenu(e) {
+    if (_rowMenuEl && !_rowMenuEl.contains(e.target)) closeRowMenu();
+  }
+  window.openRowMenu = function (ev, kind, a, b) {
+    ev.stopPropagation();
+    const reopen = _rowMenuEl && _rowMenuEl.dataset.key === kind + a + b;
+    closeRowMenu();
+    if (reopen) return;
+    const r = ev.currentTarget.getBoundingClientRect();
+    const menu = document.createElement('div');
+    menu.className = 'row-menu';
+    menu.dataset.key = kind + a + b;
+    menu.innerHTML = (kind === 'holding')
+      ? `<button type="button" onclick="closeRowMenu(); editHolding('${a}', ${b})">✏️ Edit position</button>`
+        + `<button type="button" class="danger" onclick="closeRowMenu(); deleteHolding('${a}', ${b})">🗑️ Delete position</button>`
+      : `<button type="button" class="danger" onclick="closeRowMenu(); deleteTransaction('${a}')">🗑️ Delete record</button>`;
+    document.body.appendChild(menu);
+    menu.style.top = (r.bottom + window.scrollY + 4) + 'px';
+    menu.style.left = (r.right + window.scrollX - menu.offsetWidth) + 'px';
+    _rowMenuEl = menu;
+    setTimeout(() => document.addEventListener('mousedown', onDocCloseMenu), 0);
+  };
+  window.editHolding = function (acct, index) {
+    if (collapsedAccounts.has(acct)) { collapsedAccounts.delete(acct); applyAccountCollapse(); }
+    const row = document.getElementById(`holding-row-${acct}-${index}`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const input = row.querySelector('input');
+    if (input) input.focus();
+    row.style.transition = 'background 0.4s';
+    row.style.background = 'var(--accent-soft)';
+    setTimeout(() => { row.style.background = ''; }, 1300);
+  };
+
   window.deleteHolding = function (acct, index) {
     const holding = state.accounts[acct]?.holdings[index];
     if (!holding) return;
@@ -1632,34 +1717,40 @@
       const account = state.accounts[acct];
       if (!account) continue;
 
-      // Add Account Header Divider (spans 11 columns: 9 + 2)
+      // Per-account totals, shown inline on the header row (aligned to the
+      // value/cost/G-L columns) so the overview reads cleanly when collapsed.
+      let accountTotalCost = 0;
+      let accountTotalVal = 0;
+      account.holdings.forEach(h => { accountTotalCost += h.cost; accountTotalVal += h.units * (h.pricePence / 100.0); });
+      const accountGain = accountTotalVal - accountTotalCost;
+      const accountGainPct = accountTotalCost > 0 ? (accountGain / accountTotalCost) * 100 : 0;
+
       const headerTr = document.createElement('tr');
       headerTr.className = 'account-header-row';
+      headerTr.id = `account-header-${acct}`;
       const wrapperBadgeText = ACCOUNTS[acct].taxable ? "Taxable GIA" : "Tax-Free";
       const isCollapsed = collapsedAccounts.has(acct);
       headerTr.innerHTML = `
-        <td colspan="9" style="font-weight: bold; font-size: 14px; padding: 10px 8px;" onclick="toggleAccountCollapse('${acct}')">
+        <td colspan="4" style="font-weight: bold; font-size: 14px; padding: 10px 8px;" onclick="toggleAccountCollapse('${acct}')">
           <span class="acct-collapse-arrow" id="acct-arrow-${acct}">${isCollapsed ? '▶' : '▼'}</span>
           📁 ${account.name} <span class="badge ${ACCOUNTS[acct].taxable ? 'badge-passive' : 'badge-active'}" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; font-weight: normal; vertical-align: middle;">${wrapperBadgeText}</span>
-          <span class="acct-agg" style="float: right; font-size: 13px; font-weight: 600; color: var(--muted); margin-right: 4px;"></span>
         </td>
+        <td class="acct-hdr-val" style="text-align: right; font-weight: 800; padding-right: 12px; white-space: nowrap; color: var(--text);">${formatGBP(accountTotalVal)}</td>
+        <td class="acct-hdr-cost" style="text-align: right; font-weight: 600; white-space: nowrap; color: var(--muted);">${formatGBP(accountTotalCost)}</td>
+        <td></td>
+        <td class="acct-hdr-gain" style="text-align: right; font-weight: 700; padding-right: 12px; white-space: nowrap; color: ${accountGain >= 0 ? 'var(--good)' : 'var(--bad)'};">${accountGain >= 0 ? '+' : ''}${formatGBP(accountGain)} (${accountGainPct.toFixed(1)}%)</td>
+        <td></td>
         <td colspan="2" style="text-align: right; padding: 8px 10px;">
-          <button type="button" class="secondary" onclick="addHolding('${acct}')" style="padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; box-shadow: none;">➕ Add Position</button>
+          <button type="button" class="secondary" onclick="addHolding('${acct}')" style="padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; box-shadow: none;">➕ Add</button>
         </td>
       `;
       tbody.appendChild(headerTr);
-
-      let accountTotalCost = 0;
-      let accountTotalVal = 0;
 
       // Add Position rows
       account.holdings.forEach((h, index) => {
         const val = h.units * (h.pricePence / 100.0);
         const gain = val - h.cost;
         const gainPct = h.cost > 0 ? (gain / h.cost) * 100 : 0;
-
-        accountTotalCost += h.cost;
-        accountTotalVal += val;
 
         const cagr = calculateCAGR(val, h.cost, h.entryDate);
         const cagrText = cagr !== null ? `${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}% p.a.` : '—';
@@ -1713,7 +1804,7 @@
             </select>
           </td>
           <td style="text-align: center;">
-            <button type="button" class="btn-delete-holding" onclick="deleteHolding('${acct}', ${index})" title="Delete Position">✕</button>
+            <button type="button" class="row-menu-btn" title="Options" onclick="openRowMenu(event, 'holding', '${acct}', ${index})">⋮</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1724,44 +1815,11 @@
         emptyTr.className = `acct-rows-${acct}`;
         emptyTr.innerHTML = `
           <td colspan="11" style="text-align: center; color: var(--muted); font-style: italic; padding: 10px;">
-            No positions in this account. Click "➕ Add Position" to add one.
+            No positions in this account. Click "➕ Add" to add one.
           </td>
         `;
         tbody.appendChild(emptyTr);
       }
-
-      // Add Account Subtotal Row
-      const accountGain = accountTotalVal - accountTotalCost;
-      const accountGainPct = accountTotalCost > 0 ? (accountGain / accountTotalCost) * 100 : 0;
-
-      // Aggregate shown in the (collapsed/expanded) account header: value then G/L
-      const aggEl = headerTr.querySelector('.acct-agg');
-      if (aggEl) {
-        aggEl.innerHTML = `<span style="color: var(--text); font-weight: 700;">${formatGBP(accountTotalVal)}</span>`
-          + ` <span style="color: ${accountGain >= 0 ? 'var(--good)' : 'var(--bad)'};">${accountGain >= 0 ? '+' : ''}${formatGBP(accountGain)} (${accountGainPct.toFixed(1)}%)</span>`;
-      }
-
-      const subtotalTr = document.createElement('tr');
-      subtotalTr.className = `account-subtotal-row acct-rows-${acct}`;
-      subtotalTr.id = `account-subtotal-${acct}`;
-      subtotalTr.innerHTML = `
-        <td colspan="4" style="text-align: right; font-weight: bold; color: var(--muted);">
-          ${account.name} Subtotal:
-        </td>
-        <td class="account-subtotal-val-cell" style="text-align: right; font-weight: bold; padding-right: 12px;">
-          ${formatGBP(accountTotalVal)}
-        </td>
-        <td class="account-subtotal-cost-cell" style="text-align: right; font-weight: bold;">
-          ${formatGBP(accountTotalCost)}
-        </td>
-        <td></td> <!-- Entry Date space -->
-        <td class="account-subtotal-gain-cell" style="text-align: right; font-weight: bold; padding-right: 12px; color: ${accountGain >= 0 ? 'var(--good)' : 'var(--bad)'};">
-          ${accountGain >= 0 ? '+' : ''}${formatGBP(accountGain)} (${accountGainPct.toFixed(1)}%)
-        </td>
-        <td></td> <!-- Annualised Return space -->
-        <td colspan="2"></td> <!-- Sleeve & Action -->
-      `;
-      tbody.appendChild(subtotalTr);
 
       grandTotalCost += accountTotalCost;
       grandTotalVal += accountTotalVal;
@@ -3325,7 +3383,7 @@
           <td>${tk}</td>
           <td style="text-align:right;font-variant-numeric:tabular-nums;">${units}</td>
           <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:bold;">${formatGBP(t.amount)}</td>
-          <td style="text-align:center;"><button type="button" class="btn-delete-holding" onclick="deleteTransaction('${t.id}')" title="Delete record" style="width:22px;height:22px;font-size:12px;margin:auto;">✕</button></td>
+          <td style="text-align:center;"><button type="button" class="row-menu-btn" title="Options" onclick="openRowMenu(event, 'tx', '${t.id}')">⋮</button></td>
         </tr>`;
     }).join('');
   }
