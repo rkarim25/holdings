@@ -651,9 +651,7 @@
         <div style="flex: 1; min-width: 120px;">
           <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Account</label>
           <select id="selTxAccount" class="holding-input" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; padding-right: 20px;">
-            <option value="sipp">Reza HL SIPP</option>
-            <option value="sisa">Reza ISA</option>
-            <option value="jisa1">Liyana JISA</option>
+            <!-- options populated from ACCOUNTS by populateAccountOptions() -->
           </select>
         </div>
         <div style="flex: 1; min-width: 120px;">
@@ -2448,6 +2446,17 @@
     });
   }
 
+  // Populate the transaction "Account" dropdown from ACCOUNTS so it never
+  // goes stale when accounts are added/removed.
+  function populateAccountOptions() {
+    const select = document.getElementById('selTxAccount');
+    if (!select) return;
+    select.innerHTML = '';
+    for (const id in ACCOUNTS) {
+      select.innerHTML += `<option value="${id}">${ACCOUNTS[id].name}</option>`;
+    }
+  }
+
   // Bind UI Events
   document.getElementById('btnLoadMock').addEventListener('click', loadMockData);
   document.getElementById('btnClearHoldings').addEventListener('click', clearHoldings);
@@ -2480,6 +2489,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     loadState();
     populateTickerOptions();
+    populateAccountOptions();
   });
 </script>
 </body>
