@@ -22,17 +22,8 @@
       }
     }, true);
   </script>
-  <!-- Hammer.js (Required for Chart.js Zoom/Pan Panning) -->
-  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-  <script>
-    if (typeof window.Hammer === 'undefined' && typeof Hammer !== 'undefined') {
-      window.Hammer = Hammer;
-    }
-  </script>
-  <!-- Chart.js CDN -->
+  <!-- Chart.js CDN (pan/zoom handled by a native engine, no plugin needed) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Chart.js Zoom Plugin CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
   <title>Holdings Portfolio Tracker</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -554,28 +545,28 @@
 
         <!-- Date Ranges -->
         <div style="display: flex; gap: 4px; background: rgba(0, 0, 0, 0.02); padding: 2px; border-radius: 8px;">
-          <button type="button" class="tab-btn chart-range-btn" data-range="1w" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1W</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="1m" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1M</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="3m" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">3M</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="6m" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">6M</button>
-          <button type="button" class="tab-btn chart-range-btn active" data-range="1y" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1Y</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="all" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">ALL</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="1w" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1W</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="1m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1M</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="3m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">3M</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="6m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">6M</button>
+          <button type="button" class="tab-btn chart-range-btn active" data-range="1y" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1Y</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="all" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">ALL</button>
         </div>
 
         <!-- Custom Dates -->
         <div style="display: flex; gap: 6px; align-items: center; background: rgba(0, 0, 0, 0.02); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--line); flex-wrap: wrap;">
           <span class="small" style="font-size: 11px; font-weight: 600; color: var(--muted);">Custom:</span>
-          <input type="date" id="chartStartDate" class="holding-input" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
+          <input type="date" id="chartStartDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
           <span style="font-size: 11px; color: var(--muted);">to</span>
-          <input type="date" id="chartEndDate" class="holding-input" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
-          <button type="button" id="btnResetZoom" class="tab-btn" style="padding: 2px 8px; font-size: 11px; font-weight: 600; border: none; box-shadow: none; border-radius: 6px; background: rgba(0,0,0,0.05); display: none;">Reset</button>
+          <input type="date" id="chartEndDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
+          <button type="button" id="btnResetZoom" onclick="resetChartZoom()" class="tab-btn" style="padding: 2px 8px; font-size: 11px; font-weight: 600; border: none; box-shadow: none; border-radius: 6px; background: rgba(0,0,0,0.05); display: none;">Reset</button>
         </div>
       </div>
     </div>
 
     <!-- Chart Canvas -->
-    <div style="position: relative; height: 320px; width: 100%;">
-      <canvas id="equityPerformanceChart" style="touch-action: none; cursor: grab;"></canvas>
+    <div id="chartCanvasWrap" style="position: relative; height: 320px; width: 100%; user-select: none;">
+      <canvas id="equityPerformanceChart" style="touch-action: none; cursor: grab; display: block;"></canvas>
     </div>
   </section>
 
@@ -1485,7 +1476,17 @@
   let chartMode = 'value'; // 'value' or 'percent'
   let chartRange = '1y'; // '3m', '6m', '1y', 'all'
   let selectedChartAccounts = ['sipp', 'sisa', 'jisa1'];
-  let currentActiveDates = [];
+  let displayStartDate = null;
+  let displayEndDate = null;
+
+  // Timezone-safe UTC date string formatter (YYYY-MM-DD)
+  function toISOStringDate(ms) {
+    const d = new Date(ms);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   async function fetchHistoricalPrices() {
     try {
@@ -1497,9 +1498,20 @@
       
       document.getElementById('chartCard').style.display = 'block';
       document.getElementById('ledgerCard').style.display = 'block';
+
+      // Set default dates to last 1Y
+      const dates = historicalPriceDb.dates;
+      if (dates.length > 0) {
+        const latestDateStr = dates[dates.length - 1];
+        const latestDate = new Date(latestDateStr);
+        const cut = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), latestDate.getDate());
+        displayStartDate = cut.toISOString().split('T')[0];
+        displayEndDate = latestDateStr;
+      }
       
       initChartSelectors();
       initChart();
+      initNativePanAndZoom();
     } catch (err) {
       console.warn("Failed to load historical prices. Chart will be hidden.", err);
     }
@@ -1639,20 +1651,28 @@
       performanceChart.destroy();
     }
     
+    // Create gradient fill for a premium look
+    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, 'rgba(0, 113, 227, 0.22)');
+    gradient.addColorStop(1, 'rgba(0, 113, 227, 0.01)');
+
     performanceChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
         datasets: [{
-          label: 'Portfolio Equity',
+          label: 'Portfolio Value',
           data: [],
           borderColor: '#0071e3',
-          backgroundColor: 'rgba(0, 113, 227, 0.05)',
-          borderWidth: 2,
+          backgroundColor: gradient,
+          borderWidth: 2.5,
           fill: true,
-          tension: 0.1,
+          tension: 0.15,
           pointRadius: 0,
-          pointHoverRadius: 4
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#0071e3',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2
         }]
       },
       options: {
@@ -1661,50 +1681,42 @@
         plugins: {
           legend: { display: false },
           tooltip: {
-            mode: 'index',
-            intersect: false,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            titleColor: '#1d1d1f',
+            bodyColor: '#1d1d1f',
+            borderColor: 'rgba(0, 0, 0, 0.08)',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            titleFont: { family: 'Outfit', size: 13, weight: '600' },
+            bodyFont: { family: 'Outfit', size: 13 },
             callbacks: {
               label: function(context) {
                 const val = context.parsed.y;
                 if (chartMode === 'value') {
-                  return 'Value: ' + formatGBP(val);
+                  return ' Value: ' + formatGBP(val);
                 } else {
-                  return 'Return: ' + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+                  return ' Return: ' + (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
                 }
-              }
-            }
-          },
-          zoom: {
-            pan: {
-              enabled: true,
-              mode: 'x',
-              onPanComplete: function() {
-                updateDateInputsFromChartScale();
-              }
-            },
-            zoom: {
-              wheel: {
-                enabled: true
-              },
-              pinch: {
-                enabled: true
-              },
-              mode: 'x',
-              onZoomComplete: function() {
-                updateDateInputsFromChartScale();
               }
             }
           }
         },
         scales: {
           x: {
-            grid: { color: 'rgba(0,0,0,0.02)' },
-            ticks: { maxTicksLimit: 8, font: { family: 'Outfit' } }
+            grid: { display: false },
+            ticks: { 
+              maxTicksLimit: 8, 
+              font: { family: 'Outfit', size: 11, weight: '500' },
+              color: 'var(--muted)'
+            }
           },
           y: {
             grid: { color: 'rgba(0,0,0,0.04)' },
             ticks: {
-              font: { family: 'Outfit' },
+              font: { family: 'Outfit', size: 11, weight: '500' },
+              color: 'var(--muted)',
               callback: function(value) {
                 if (chartMode === 'value') {
                   return '£' + value.toLocaleString();
@@ -1721,6 +1733,263 @@
     updateChart();
   }
 
+  // Native mouse & touch zoom/pan interaction engine (no external plugin dependency)
+  function initNativePanAndZoom() {
+    const canvas = document.getElementById('equityPerformanceChart');
+    if (!canvas) return;
+    
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartStartDateStr = '';
+    let dragStartEndDateStr = '';
+    
+    // Mouse Down (Start Pan)
+    canvas.addEventListener('mousedown', function(e) {
+      if (!performanceChart || !historicalPriceDb) return;
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartStartDateStr = displayStartDate;
+      dragStartEndDateStr = displayEndDate;
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    
+    // Mouse Move (Pan in Action)
+    window.addEventListener('mousemove', function(e) {
+      if (!isDragging || !performanceChart || !historicalPriceDb) return;
+      
+      const chartArea = performanceChart.chartArea;
+      if (!chartArea) return;
+      
+      const chartWidth = chartArea.right - chartArea.left;
+      const dx = e.clientX - dragStartX;
+      
+      const startT = new Date(dragStartStartDateStr).getTime();
+      const endT = new Date(dragStartEndDateStr).getTime();
+      const rangeMs = endT - startT;
+      
+      const shiftMs = (dx / chartWidth) * rangeMs;
+      
+      let newStartT = startT - shiftMs;
+      let newEndT = endT - shiftMs;
+      
+      const absMinT = new Date(historicalPriceDb.dates[0]).getTime();
+      const absMaxT = new Date(historicalPriceDb.dates[historicalPriceDb.dates.length - 1]).getTime();
+      
+      if (newStartT < absMinT) {
+        newEndT += (absMinT - newStartT);
+        newStartT = absMinT;
+      }
+      if (newEndT > absMaxT) {
+        newStartT -= (newEndT - absMaxT);
+        newEndT = absMaxT;
+      }
+      
+      newStartT = Math.max(absMinT, newStartT);
+      newEndT = Math.min(absMaxT, newEndT);
+      
+      displayStartDate = toISOStringDate(newStartT);
+      displayEndDate = toISOStringDate(newEndT);
+      
+      chartRange = 'zoomed';
+      document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+      
+      updateChart();
+    });
+    
+    // Mouse Up (End Pan)
+    window.addEventListener('mouseup', function() {
+      if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+      }
+    });
+    
+    // Mouse Wheel (Zoom in/out centered at mouse X position)
+    canvas.addEventListener('wheel', function(e) {
+      if (!performanceChart || !historicalPriceDb) return;
+      e.preventDefault();
+      
+      const zoomFactor = e.deltaY > 0 ? 1.05 : 0.95;
+      
+      const startT = new Date(displayStartDate).getTime();
+      const endT = new Date(displayEndDate).getTime();
+      const rangeMs = endT - startT;
+      
+      const absMinT = new Date(historicalPriceDb.dates[0]).getTime();
+      const absMaxT = new Date(historicalPriceDb.dates[historicalPriceDb.dates.length - 1]).getTime();
+      
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const chartArea = performanceChart.chartArea;
+      
+      let mouseFraction = 0.5;
+      if (chartArea) {
+        const chartWidth = chartArea.right - chartArea.left;
+        const chartMouseX = mouseX - chartArea.left;
+        mouseFraction = Math.max(0, Math.min(1, chartMouseX / chartWidth));
+      }
+      
+      const mouseTime = startT + rangeMs * mouseFraction;
+      const newRangeMs = rangeMs * zoomFactor;
+      
+      const minRangeMs = 3 * 24 * 60 * 60 * 1000; // 3 days min zoom
+      const maxRangeMs = absMaxT - absMinT;
+      let finalRangeMs = Math.max(minRangeMs, Math.min(maxRangeMs, newRangeMs));
+      
+      let newStartT = mouseTime - finalRangeMs * mouseFraction;
+      let newEndT = mouseTime + finalRangeMs * (1 - mouseFraction);
+      
+      if (newStartT < absMinT) {
+        newStartT = absMinT;
+        newEndT = newStartT + finalRangeMs;
+      }
+      if (newEndT > absMaxT) {
+        newEndT = absMaxT;
+        newStartT = newEndT - finalRangeMs;
+      }
+      
+      newStartT = Math.max(absMinT, newStartT);
+      newEndT = Math.min(absMaxT, newEndT);
+      
+      displayStartDate = toISOStringDate(newStartT);
+      displayEndDate = toISOStringDate(newEndT);
+      
+      chartRange = 'zoomed';
+      document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+      
+      updateChart();
+    }, { passive: false });
+
+    // Touch Support (Single touch pan)
+    let isTouchDragging = false;
+    let touchStartX = 0;
+    
+    canvas.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        if (!performanceChart || !historicalPriceDb) return;
+        isTouchDragging = true;
+        touchStartX = e.touches[0].clientX;
+        dragStartStartDateStr = displayStartDate;
+        dragStartEndDateStr = displayEndDate;
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', function(e) {
+      if (!isTouchDragging || !performanceChart || !historicalPriceDb) return;
+      if (e.touches.length === 1) {
+        const chartArea = performanceChart.chartArea;
+        if (!chartArea) return;
+        
+        const chartWidth = chartArea.right - chartArea.left;
+        const dx = e.touches[0].clientX - touchStartX;
+        
+        const startT = new Date(dragStartStartDateStr).getTime();
+        const endT = new Date(dragStartEndDateStr).getTime();
+        const rangeMs = endT - startT;
+        
+        const shiftMs = (dx / chartWidth) * rangeMs;
+        
+        let newStartT = startT - shiftMs;
+        let newEndT = endT - shiftMs;
+        
+        const absMinT = new Date(historicalPriceDb.dates[0]).getTime();
+        const absMaxT = new Date(historicalPriceDb.dates[historicalPriceDb.dates.length - 1]).getTime();
+        
+        if (newStartT < absMinT) {
+          newEndT += (absMinT - newStartT);
+          newStartT = absMinT;
+        }
+        if (newEndT > absMaxT) {
+          newStartT -= (newEndT - absMaxT);
+          newEndT = absMaxT;
+        }
+        
+        newStartT = Math.max(absMinT, newStartT);
+        newEndT = Math.min(absMaxT, newEndT);
+        
+        displayStartDate = toISOStringDate(newStartT);
+        displayEndDate = toISOStringDate(newEndT);
+        
+        chartRange = 'zoomed';
+        document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+        
+        updateChart();
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', function() {
+      isTouchDragging = false;
+    });
+  }
+
+  // Global onclick triggers for presets and inputs
+  window.setChartRange = function(btn) {
+    document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chartRange = btn.getAttribute('data-range');
+    
+    const dates = historicalPriceDb.dates;
+    if (dates.length === 0) return;
+    const latestDateStr = dates[dates.length - 1];
+    const latestDate = new Date(latestDateStr);
+    
+    let start = dates[0];
+    if (chartRange === '1w') {
+      const cut = new Date(latestDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      start = toISOStringDate(cut.getTime());
+    } else if (chartRange === '1m') {
+      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 1, latestDate.getDate());
+      start = toISOStringDate(cut.getTime());
+    } else if (chartRange === '3m') {
+      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 3, latestDate.getDate());
+      start = toISOStringDate(cut.getTime());
+    } else if (chartRange === '6m') {
+      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 6, latestDate.getDate());
+      start = toISOStringDate(cut.getTime());
+    } else if (chartRange === '1y') {
+      const cut = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), latestDate.getDate());
+      start = toISOStringDate(cut.getTime());
+    } else if (chartRange === 'all') {
+      const sortedTxs = [...state.transactions].sort((a, b) => a.date.localeCompare(b.date));
+      start = sortedTxs.length > 0 ? sortedTxs[0].date : dates[0];
+    }
+    
+    displayStartDate = start;
+    displayEndDate = latestDateStr;
+    updateChart();
+  };
+
+  window.setChartCustomRange = function() {
+    chartRange = 'custom';
+    document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+    
+    displayStartDate = document.getElementById('chartStartDate').value;
+    displayEndDate = document.getElementById('chartEndDate').value;
+    
+    updateChart();
+  };
+
+  window.resetChartZoom = function() {
+    const btn1y = document.querySelector('.chart-range-btn[data-range="1y"]');
+    if (btn1y) {
+      setChartRange(btn1y);
+    } else {
+      chartRange = '1y';
+      const dates = historicalPriceDb.dates;
+      if (dates.length > 0) {
+        const latestDateStr = dates[dates.length - 1];
+        const latestDate = new Date(latestDateStr);
+        const cut = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), latestDate.getDate());
+        displayStartDate = toISOStringDate(cut.getTime());
+        displayEndDate = latestDateStr;
+      }
+      updateChart();
+    }
+  };
+
   function updateChart() {
     if (!performanceChart || !historicalPriceDb) return;
     
@@ -1731,49 +2000,31 @@
       return;
     }
     
-    let startDate = '1970-01-01';
-    let endDate = '9999-12-31';
-    
     const dates = historicalPriceDb.dates;
-    const latestDateStr = dates.length > 0 ? dates[dates.length - 1] : new Date().toISOString().split('T')[0];
-    const latestDate = new Date(latestDateStr);
+    if (dates.length === 0) return;
+    const absMinDate = dates[0];
+    const absMaxDate = dates[dates.length - 1];
     
-    if (chartRange === '1w') {
-      const cut = new Date(latestDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      startDate = cut.toISOString().split('T')[0];
-    } else if (chartRange === '1m') {
-      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 1, latestDate.getDate());
-      startDate = cut.toISOString().split('T')[0];
-    } else if (chartRange === '3m') {
-      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 3, latestDate.getDate());
-      startDate = cut.toISOString().split('T')[0];
-    } else if (chartRange === '6m') {
-      const cut = new Date(latestDate.getFullYear(), latestDate.getMonth() - 6, latestDate.getDate());
-      startDate = cut.toISOString().split('T')[0];
-    } else if (chartRange === '1y') {
-      const cut = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), latestDate.getDate());
-      startDate = cut.toISOString().split('T')[0];
-    } else if (chartRange === 'custom') {
-      const s = document.getElementById('chartStartDate').value;
-      const e = document.getElementById('chartEndDate').value;
-      if (s) startDate = s;
-      if (e) endDate = e;
+    if (!displayStartDate || displayStartDate < absMinDate) displayStartDate = absMinDate;
+    if (!displayEndDate || displayEndDate > absMaxDate) displayEndDate = absMaxDate;
+    if (displayStartDate > displayEndDate) displayStartDate = displayEndDate;
+    
+    // Update inputs to match state
+    document.getElementById('chartStartDate').value = displayStartDate;
+    document.getElementById('chartEndDate').value = displayEndDate;
+    
+    // Toggle Reset zoom button visibility
+    const resetBtn = document.getElementById('btnResetZoom');
+    if (resetBtn) {
+      if (chartRange === 'custom' || chartRange === 'zoomed') {
+        resetBtn.style.display = 'inline-block';
+      } else {
+        resetBtn.style.display = 'none';
+      }
     }
     
-    const sortedTxs = [...state.transactions].sort((a, b) => a.date.localeCompare(b.date));
-    const earliestTxDate = sortedTxs.length > 0 ? sortedTxs[0].date : '2026-01-01';
-    
-    const displayStartDate = earliestTxDate > startDate ? earliestTxDate : startDate;
-    const displayEndDate = latestDateStr < endDate ? latestDateStr : endDate;
-    
-    if (chartRange !== 'custom') {
-      document.getElementById('chartStartDate').value = displayStartDate;
-      document.getElementById('chartEndDate').value = displayEndDate;
-    }
-    
-    const activeDates = historicalPriceDb.dates.filter(d => d >= displayStartDate && d <= endDate);
-    currentActiveDates = activeDates;
-    
+    const activeDates = dates.filter(d => d >= displayStartDate && d <= displayEndDate);
+
     if (activeDates.length === 0) {
       performanceChart.data.labels = [];
       performanceChart.data.datasets[0].data = [];
@@ -1828,29 +2079,6 @@
     performanceChart.data.labels = chartLabels;
     performanceChart.data.datasets[0].data = chartData;
     performanceChart.update();
-  }
-
-  function updateDateInputsFromChartScale() {
-    if (!performanceChart) return;
-    const xAxis = performanceChart.scales.x;
-    const minVal = xAxis.min;
-    const maxVal = xAxis.max;
-    
-    const labels = performanceChart.data.labels;
-    if (labels && labels.length > 0) {
-      const startIdx = Math.max(0, Math.floor(minVal));
-      const endIdx = Math.min(labels.length - 1, Math.ceil(maxVal));
-      
-      if (currentActiveDates && currentActiveDates[startIdx] && currentActiveDates[endIdx]) {
-        document.getElementById('chartStartDate').value = currentActiveDates[startIdx];
-        document.getElementById('chartEndDate').value = currentActiveDates[endIdx];
-        document.getElementById('btnResetZoom').style.display = 'inline-block';
-        
-        // Mark range as custom since user zoomed/panned
-        chartRange = 'custom';
-        document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-      }
-    }
   }
 
   // --- LEDGER PANEL & EDITOR ---
@@ -2121,53 +2349,7 @@
     updateChart();
   });
   
-  document.querySelectorAll('.chart-range-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const currentBtn = e.currentTarget;
-      document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-      currentBtn.classList.add('active');
-      chartRange = currentBtn.getAttribute('data-range');
-      // Hide Reset Zoom button since we're using a preset range
-      const resetBtn = document.getElementById('btnResetZoom');
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (performanceChart && typeof performanceChart.resetZoom === 'function') {
-        performanceChart.resetZoom();
-      }
-      updateChart();
-    });
-  });
-
-  // Custom Date inputs
-  document.getElementById('chartStartDate').addEventListener('change', () => {
-    chartRange = 'custom';
-    document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-    const resetBtn = document.getElementById('btnResetZoom');
-    if (resetBtn) resetBtn.style.display = 'none';
-    if (performanceChart && typeof performanceChart.resetZoom === 'function') {
-      performanceChart.resetZoom();
-    }
-    updateChart();
-  });
-  document.getElementById('chartEndDate').addEventListener('change', () => {
-    chartRange = 'custom';
-    document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-    const resetBtn = document.getElementById('btnResetZoom');
-    if (resetBtn) resetBtn.style.display = 'none';
-    if (performanceChart && typeof performanceChart.resetZoom === 'function') {
-      performanceChart.resetZoom();
-    }
-    updateChart();
-  });
-  
-  // Reset Zoom button
-  document.getElementById('btnResetZoom').addEventListener('click', () => {
-    if (performanceChart && typeof performanceChart.resetZoom === 'function') {
-      performanceChart.resetZoom();
-      const resetBtn = document.getElementById('btnResetZoom');
-      if (resetBtn) resetBtn.style.display = 'none';
-      updateChart();
-    }
-  });
+  // (Range buttons, date inputs, and reset now use inline onclick globals defined above)
   
   // Unlock on Enter press
   document.getElementById('txtPasscode').addEventListener('keydown', (e) => {
