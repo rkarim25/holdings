@@ -555,9 +555,14 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
       <h3 style="font-size: 20px; font-weight: 700; color: var(--text);">Account Positions</h3>
       
-      <div style="display: flex; gap: 10px; align-items: center;">
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <button type="button" id="btnFetchPrices" style="padding: 8px 16px; font-size: 13px;" title="Loads the latest pre-fetched prices. Prices are refreshed on a schedule (every ~30 min during UK market hours and after the US close), not live on click.">🔄 Refresh Prices</button>
         <span id="lblFetchStatus" class="small"></span>
+        <span class="small" style="color: var(--muted); margin-left: 6px;" title="Capital Gains Tax rate used for the CGT column (taxable accounts)">CGT rate</span>
+        <select id="cgtRateSel" onchange="setCgtRate(this.value)" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 5px 8px; font-size: 13px;">
+          <option value="0.18">Basic 18%</option>
+          <option value="0.24" selected>Higher 24%</option>
+        </select>
       </div>
     </div>
 
@@ -573,9 +578,10 @@
             <th style="text-align: right; width: 9%;">Current Value (£)</th>
             <th style="text-align: right; width: 8%;">Cost (£)</th>
             <th style="text-align: center; width: 12%;">Entry Date</th>
-            <th style="text-align: right; width: 11%;">Unrealised G/L</th>
-            <th style="text-align: right; width: 9%;">Annualised</th>
-            <th style="width: 11%;">Mapped Sleeve</th>
+            <th style="text-align: right; width: 10%;">Unrealised G/L</th>
+            <th style="text-align: right; width: 8%;" title="Estimated CGT on this holding (taxable accounts only)">CGT</th>
+            <th style="text-align: right; width: 8%;">Annualised</th>
+            <th style="width: 10%;">Mapped Sleeve</th>
             <th style="width: 3%; text-align: center;"></th>
           </tr>
         </thead>
@@ -613,58 +619,6 @@
         <div>
           <div class="total-item-lbl">Annualised Return</div>
           <div id="lblAccountTotalAnn" class="total-item-val font-weight-bold">—</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CAPITAL GAINS TAX CARD (taxable accounts) -->
-  <section class="card" id="cgtCard" style="display: none; margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px;">
-      <h3 style="font-size: 18px; font-weight: 700; color: var(--text);">🧾 Capital Gains Tax (Estimated)</h3>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span class="small" style="color: var(--muted);">CGT rate</span>
-        <select id="cgtRateSel" class="holding-input" onchange="setCgtRate(this.value)" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px;">
-          <option value="0.18">Basic 18%</option>
-          <option value="0.24" selected>Higher 24%</option>
-        </select>
-      </div>
-    </div>
-    <p class="small" style="color: var(--muted); margin-bottom: 12px;">
-      Estimated CGT on <strong>unrealised gains</strong> in taxable (GIA) accounts only. Excludes transferred-in securities and tax-free wrappers (ISA / SIPP / JISA).
-    </p>
-    <div class="table-wrap" style="margin-bottom: 16px;">
-      <table>
-        <thead>
-          <tr>
-            <th>Holding</th>
-            <th>Account</th>
-            <th style="text-align: right;">Cost</th>
-            <th style="text-align: right;">Market Value</th>
-            <th style="text-align: right;">Unrealised Gain</th>
-            <th style="text-align: right;">CGT</th>
-          </tr>
-        </thead>
-        <tbody id="cgtTableBody"><!-- Rendered dynamically --></tbody>
-      </table>
-    </div>
-    <div class="utility-row" style="justify-content: flex-end;">
-      <div class="totals-board">
-        <div>
-          <div class="total-item-lbl">Total taxable gain</div>
-          <div id="cgtTotalGain" class="total-item-val">£0</div>
-        </div>
-        <div>
-          <div class="total-item-lbl">Annual exempt</div>
-          <div id="cgtAllowance" class="total-item-val">−£3,000</div>
-        </div>
-        <div>
-          <div class="total-item-lbl">Gain after allowance</div>
-          <div id="cgtTaxable" class="total-item-val">£0</div>
-        </div>
-        <div>
-          <div class="total-item-lbl">Estimated CGT</div>
-          <div id="cgtEstimate" class="total-item-val" style="font-weight: 800; color: var(--bad);">£0</div>
         </div>
       </div>
     </div>
@@ -1577,13 +1531,13 @@
       const account = state.accounts[acct];
       if (!account) continue;
 
-      // Add Account Header Divider (spans 11 columns: 9 + 2)
+      // Add Account Header Divider (spans 12 columns: 10 + 2)
       const headerTr = document.createElement('tr');
       headerTr.className = 'account-header-row';
       const wrapperBadgeText = ACCOUNTS[acct].taxable ? "Taxable GIA" : "Tax-Free";
       const isCollapsed = collapsedAccounts.has(acct);
       headerTr.innerHTML = `
-        <td colspan="9" style="font-weight: bold; font-size: 14px; padding: 10px 8px;" onclick="toggleAccountCollapse('${acct}')">
+        <td colspan="10" style="font-weight: bold; font-size: 14px; padding: 10px 8px;" onclick="toggleAccountCollapse('${acct}')">
           <span class="acct-collapse-arrow" id="acct-arrow-${acct}">${isCollapsed ? '▶' : '▼'}</span>
           📁 ${account.name} <span class="badge ${ACCOUNTS[acct].taxable ? 'badge-passive' : 'badge-active'}" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; font-weight: normal; vertical-align: middle;">${wrapperBadgeText}</span>
         </td>
@@ -1595,6 +1549,8 @@
 
       let accountTotalCost = 0;
       let accountTotalVal = 0;
+      let accountTaxableGain = 0;
+      const acctTaxable = !!(ACCOUNTS[acct] && ACCOUNTS[acct].taxable);
 
       // Add Position rows
       account.holdings.forEach((h, index) => {
@@ -1604,6 +1560,13 @@
 
         accountTotalCost += h.cost;
         accountTotalVal += val;
+
+        // Per-holding CGT (taxable accounts only; transferred-in & cash excluded)
+        const cgtEligible = acctTaxable && h.ticker !== 'CASH' && !h.transferredIn;
+        if (cgtEligible) accountTaxableGain += gain;
+        const lineCgt = cgtEligible ? gain * cgtRate : null;
+        const cgtCellText = (lineCgt === null) ? '—' : formatGBP(lineCgt);
+        const cgtCellColor = (lineCgt !== null && lineCgt > 0) ? 'var(--bad)' : 'var(--muted)';
 
         const cagr = calculateCAGR(val, h.cost, h.entryDate);
         const cagrText = cagr !== null ? `${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}% p.a.` : '—';
@@ -1642,6 +1605,9 @@
               ${gain >= 0 ? '+' : ''}${formatGBP(gain)} (${gainPct.toFixed(1)}%)
             </span>
           </td>
+          <td style="text-align: right; padding-right: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: ${cgtCellColor};">
+            ${cgtCellText}
+          </td>
           <td class="holding-ann-cell" style="text-align: right; padding-right: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: ${cagrColor};">
             ${cagrText}
           </td>
@@ -1667,7 +1633,7 @@
         const emptyTr = document.createElement('tr');
         emptyTr.className = `acct-rows-${acct}`;
         emptyTr.innerHTML = `
-          <td colspan="11" style="text-align: center; color: var(--muted); font-style: italic; padding: 10px;">
+          <td colspan="12" style="text-align: center; color: var(--muted); font-style: italic; padding: 10px;">
             No positions in this account. Click "➕ Add Position" to add one.
           </td>
         `;
@@ -1695,6 +1661,9 @@
         <td class="account-subtotal-gain-cell" style="text-align: right; font-weight: bold; padding-right: 12px; color: ${accountGain >= 0 ? 'var(--good)' : 'var(--bad)'};">
           ${accountGain >= 0 ? '+' : ''}${formatGBP(accountGain)} (${accountGainPct.toFixed(1)}%)
         </td>
+        <td style="text-align: right; padding-right: 12px; font-weight: bold; color: ${acctTaxable ? 'var(--bad)' : 'var(--muted)'};" title="${acctTaxable ? 'Total estimated CGT after the £' + CGT_ALLOWANCE.toLocaleString() + ' annual exemption' : 'Tax-free wrapper'}">
+          ${acctTaxable ? formatGBP(Math.max(0, accountTaxableGain - CGT_ALLOWANCE) * cgtRate) : '—'}
+        </td>
         <td></td> <!-- Annualised Return space -->
         <td colspan="2"></td> <!-- Sleeve & Action -->
       `;
@@ -1705,7 +1674,6 @@
     }
 
     recomputeGrandTotals();
-    renderCGT();
     applyAccountCollapse();
   }
 
@@ -3042,7 +3010,7 @@
 
   window.setCgtRate = function (v) {
     cgtRate = parseFloat(v);
-    renderCGT();
+    syncStateToDOM(); // re-render the positions table with the new CGT rate
   };
 
   window.deleteTransaction = function(id) {
