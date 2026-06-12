@@ -4,10 +4,12 @@ on:
   schedule:
     # Every 30 min during UK LSE regular session (08:00-16:30 Europe/London, Mon-Fri).
     # UTC hours 07-16 cover BST open (07:00 UTC = 08:00 BST) through 16:30 GMT close.
-    - cron: "*/30 7-16 * * 1-5"
+    # Minutes are offset off :00/:30 because GitHub frequently delays or drops
+    # scheduled runs queued at the top of the hour under load.
+    - cron: "8,38 7-16 * * 1-5"
     # After US cash equity close (21:00 / 22:00 UTC handles EDT/EST).
-    - cron: "0 21 * * 1-5"
-    - cron: "0 22 * * 1-5"
+    - cron: "8 21 * * 1-5"
+    - cron: "8 22 * * 1-5"
   workflow_dispatch:
 
 permissions:

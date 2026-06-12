@@ -488,7 +488,7 @@
       <h3 style="font-size: 20px; font-weight: 700; color: var(--text);">Account Positions</h3>
       
       <div style="display: flex; gap: 10px; align-items: center;">
-        <button type="button" id="btnFetchPrices" style="padding: 8px 16px; font-size: 13px;">🔄 Fetch Live Ticker Prices</button>
+        <button type="button" id="btnFetchPrices" style="padding: 8px 16px; font-size: 13px;" title="Loads the latest pre-fetched prices. Prices are refreshed on a schedule (every ~30 min during UK market hours and after the US close), not live on click.">🔄 Refresh Prices</button>
         <span id="lblFetchStatus" class="small"></span>
       </div>
     </div>
@@ -1462,10 +1462,24 @@
       }
 
       btn.disabled = false;
-      const dateStr = payload.generated_at_utc ? new Date(payload.generated_at_utc).toLocaleTimeString() : 'recently';
       if (successCount > 0) {
-        statusEl.className = 'small good';
-        statusEl.textContent = `Successfully updated ${successCount} of ${totalTickers} ticker prices (refreshed at ${dateStr})`;
+        const genMs = payload.generated_at_utc ? new Date(payload.generated_at_utc).getTime() : NaN;
+        let ageLabel = 'loaded';
+        let fresh = true;
+        if (!isNaN(genMs)) {
+          const mins = Math.max(0, Math.round((Date.now() - genMs) / 60000));
+          const timeStr = new Date(genMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          let rel;
+          if (mins < 1) rel = 'just now';
+          else if (mins < 60) rel = `${mins} min ago`;
+          else { const h = Math.floor(mins / 60), m = mins % 60; rel = m ? `${h}h ${m}m ago` : `${h}h ago`; }
+          ageLabel = `as of ${timeStr} · ${rel}`;
+          fresh = mins < 60;
+        }
+        // Green only when the data is recent; otherwise neutral (avoids false
+        // "stale" alarms overnight when no refresh is expected anyway).
+        statusEl.className = fresh ? 'small good' : 'small';
+        statusEl.textContent = `${successCount}/${totalTickers} prices · ${ageLabel}`;
       } else {
         statusEl.className = 'small warn';
         statusEl.textContent = `No matching tickers found to update.`;
