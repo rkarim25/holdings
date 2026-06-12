@@ -850,7 +850,8 @@
     saba: { name: "Saba Investment Account (5669793)", taxable: true, usable: true },
     saba_isa: { name: "Saba ISA (5669918)", taxable: false, usable: true },
     nameer_isa: { name: "Nameer JISA (5709736)", taxable: false },
-    saba_sipp: { name: "Saba SIPP (5758430)", taxable: false }
+    saba_sipp: { name: "Saba SIPP (5758430)", taxable: false },
+    reza_lisa: { name: "Reza LISA", taxable: false }
   };
 
   // Default accounts structure pre-populated with SIPP holdings from your HL screenshot
@@ -914,6 +915,12 @@
       holdings: [
         { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 16, pricePence: 25639.00, cost: 2483.20, sleeve: "spx" },
         { name: "Cash (HL Account Balance)", ticker: "CASH", units: 3043.84, pricePence: 100.0, cost: 3043.84, sleeve: "cash" }
+      ]
+    },
+    reza_lisa: {
+      name: "Reza LISA",
+      holdings: [
+        { name: "Reza Lifetime ISA (managed)", ticker: "LISA", units: 24031.3542, pricePence: 191.5516, cost: 30004.38, sleeve: "other" }
       ]
     }
   };
@@ -1833,7 +1840,7 @@
   let performanceChart = null;
   let chartMode = 'value'; // 'value' or 'percent'
   let chartRange = '1y'; // '3m', '6m', '1y', 'all'
-  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba', 'saba_isa', 'nameer_isa', 'saba_sipp'];
+  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba', 'saba_isa', 'nameer_isa', 'saba_sipp', 'reza_lisa'];
   let displayStartDate = null;
   let displayEndDate = null;
 
@@ -1879,6 +1886,24 @@
   // account id. Accounts without an entry here auto-generate a simple
   // ledger from their current holdings (see initializeTransactionsFromHoldings).
   const ACCOUNT_LEDGERS = {
+    reza_lisa: [
+      { id: "lz1", date: "2019-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz2", date: "2019-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 4000.0, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz3", date: "2020-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz4", date: "2020-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 3703.7037, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz5", date: "2021-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz6", date: "2021-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 3333.3333, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz7", date: "2022-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz8", date: "2022-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 3636.3636, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz9", date: "2023-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz10", date: "2023-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 3200.0, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz11", date: "2024-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz12", date: "2024-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 2758.6207, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz13", date: "2025-04-06", type: "inflow", ticker: "CASH", amount: 4000, description: "LISA contribution" },
+      { id: "lz14", date: "2025-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 2352.9412, amount: 4000, sleeve: "other", description: "LISA contribution invested" },
+      { id: "lz15", date: "2026-04-06", type: "inflow", ticker: "CASH", amount: 2004.38, description: "LISA contribution" },
+      { id: "lz16", date: "2026-04-06", type: "buy", ticker: "LISA", name: "Reza Lifetime ISA (managed)", units: 1046.3917, amount: 2004.38, sleeve: "other", description: "LISA contribution invested" },
+    ],
     saba_isa: [
       { id: "si-x-XS2DL", date: "2022-06-12", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 151.0, amount: 0, sleeve: "spx", description: "Transfer in (in-specie) Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
       { id: "si1", date: "2023-05-02", type: "inflow", ticker: "CASH", amount: 42.74, description: "Trf from IG Group" },
