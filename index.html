@@ -571,7 +571,11 @@
     <!-- Actions & Totals -->
     <div class="utility-row" style="justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
       <div>
-        <div class="total-item-lbl" style="margin-bottom: 6px;">Include in totals</div>
+        <div class="total-item-lbl" style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span>Include in totals</span>
+          <button type="button" class="secondary" onclick="setTotalPreset('all')" style="padding: 2px 10px; font-size: 11px; box-shadow: none; border-radius: 6px;">All</button>
+          <button type="button" class="secondary" onclick="setTotalPreset('usable')" style="padding: 2px 10px; font-size: 11px; box-shadow: none; border-radius: 6px;" title="Adult ISAs + investment accounts only (excludes pensions and junior ISAs)">Usable cash</button>
+        </div>
         <div id="totalAccountFilter" class="total-account-filter">
           <!-- account checkboxes populated by renderTotalAccountFilter() -->
         </div>
@@ -826,12 +830,14 @@
     cash: { name: 'Cash', color: 'var(--color-cash)', class: 'dot-cash' }
   };
 
+  // usable: counts toward "usable cash" — adult ISAs + investment (GIA)
+  // accounts only (pensions and junior ISAs are locked, so excluded).
   const ACCOUNTS = {
     sipp: { name: "Reza HL SIPP", taxable: false },
-    sisa: { name: "Reza ISA", taxable: false },
+    sisa: { name: "Reza ISA", taxable: false, usable: true },
     jisa1: { name: "Liyana JISA", taxable: false },
-    saba: { name: "Saba Investment Account", taxable: true },
-    saba_isa: { name: "Saba ISA", taxable: false },
+    saba: { name: "Saba Investment Account", taxable: true, usable: true },
+    saba_isa: { name: "Saba ISA", taxable: false, usable: true },
     nameer_isa: { name: "Nameer ISA", taxable: false },
     saba_sipp: { name: "Saba SIPP", taxable: false }
   };
@@ -843,12 +849,12 @@
       holdings: [
         { name: "Amundi Euro Stoxx 50 (DR) UCITS ETF Acc", ticker: "MSE.PA", units: 889, pricePence: 5912.28, cost: 44716.54, sleeve: "other" },
         { name: "Ark Artificial Intelligence & Robotics UCITS ETF", ticker: "ARKA.L", units: 2490, pricePence: 774.80, cost: 15999.62, sleeve: "ndx" },
-        { name: "HL Growth Fund Accumulation (GBP)", ticker: "", units: 1058.246, pricePence: 140.81, cost: 1172.20, sleeve: "other" },
-        { name: "Pictet Robotics Class I - Accumulation (GBP)", ticker: "", units: 61.47982, pricePence: 43769.00, cost: 20000.00, sleeve: "ndx" },
+        { name: "HL Growth Fund Accumulation (GBP)", ticker: "HLGROWTH", units: 1058.246, pricePence: 140.81, cost: 1172.20, sleeve: "other" },
+        { name: "Pictet Robotics Class I - Accumulation (GBP)", ticker: "PICTET", units: 61.47982, pricePence: 43769.00, cost: 20000.00, sleeve: "ndx" },
         { name: "SPDR MSCI Emerging Markets UCITS ETF", ticker: "EMRD.L", units: 270, pricePence: 7597.70, cost: 14486.51, sleeve: "em" },
-        { name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", ticker: "", units: 37.3993, pricePence: 51038.34, cost: 13061.26, sleeve: "other" },
-        { name: "Vanguard FTSE UK All Share Index Acc (GBP)", ticker: "", units: 81.3924, pricePence: 36225.39, cost: 19499.94, sleeve: "ftse" },
-        { name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", ticker: "", units: 172.55, pricePence: 6602.97, cost: 8999.88, sleeve: "spx" },
+        { name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", ticker: "VANG_EUEX", units: 37.3993, pricePence: 51038.34, cost: 13061.26, sleeve: "other" },
+        { name: "Vanguard FTSE UK All Share Index Acc (GBP)", ticker: "VANG_UK", units: 81.3924, pricePence: 36225.39, cost: 19499.94, sleeve: "ftse" },
+        { name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", ticker: "VANG_US500", units: 172.55, pricePence: 6602.97, cost: 8999.88, sleeve: "spx" },
         { name: "WisdomTree Gold 2x Daily Leveraged", ticker: "LBUL.L", units: 90, pricePence: 12895.14, cost: 8995.62, sleeve: "gold" },
         { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 709, pricePence: 24485.12, cost: 102334.03, sleeve: "spx" },
         { name: "Cash (HL Account Balance)", ticker: "CASH", units: 7318.05, pricePence: 100.0, cost: 7318.05, sleeve: "cash" }
@@ -1458,6 +1464,17 @@
     }
   }
 
+  // Quick presets for the include-in-totals selection.
+  window.setTotalPreset = function (which) {
+    if (which === 'usable') {
+      selectedTotalAccounts = new Set(Object.keys(ACCOUNTS).filter(id => ACCOUNTS[id].usable));
+    } else {
+      selectedTotalAccounts = new Set(Object.keys(ACCOUNTS));
+    }
+    renderTotalAccountFilter();
+    recomputeGrandTotals();
+  };
+
   window.addHolding = function (acct) {
     if (!state.accounts[acct]) return;
     const newHolding = {
@@ -1827,6 +1844,213 @@
   // account id. Accounts without an entry here auto-generate a simple
   // ledger from their current holdings (see initializeTransactionsFromHoldings).
   const ACCOUNT_LEDGERS = {
+    sipp: [
+      { id: "rs1", date: "2023-05-02", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs2", date: "2023-05-03", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 48.48, amount: 1875.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs3", date: "2023-05-09", type: "inflow", ticker: "CASH", amount: 0.12, description: "Interest" },
+      { id: "rs4", date: "2023-06-01", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs5", date: "2023-06-02", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1498, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs6", date: "2023-06-02", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 27.56, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs7", date: "2023-06-02", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5374, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs8", date: "2023-06-03", type: "outflow", ticker: "CASH", amount: 0.12, description: "Management Fee" },
+      { id: "rs9", date: "2023-06-05", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.17, amount: 280.26, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs10", date: "2023-06-09", type: "inflow", ticker: "CASH", amount: 0.17, description: "Interest" },
+      { id: "rs11", date: "2023-06-27", type: "outflow", ticker: "CASH", amount: 0.13, description: "Management Fee" },
+      { id: "rs12", date: "2023-06-29", type: "inflow", ticker: "CASH", amount: 100668.16, description: "SIPP Transfer In" },
+      { id: "rs13", date: "2023-07-03", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 62.3779, amount: 15000.0, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs14", date: "2023-07-03", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 28.5943, amount: 10000.0, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs15", date: "2023-07-03", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs16", date: "2023-07-04", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 62.53, amount: 14999.14, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs17", date: "2023-07-04", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5377, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs18", date: "2023-07-04", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1648, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs19", date: "2023-07-05", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.17, amount: 279.14, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs20", date: "2023-07-05", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 27.04, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs21", date: "2023-07-05", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 1457.58, amount: 60650.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs22", date: "2023-07-06", type: "outflow", ticker: "CASH", amount: 0.48, description: "Management Fee" },
+      { id: "rs23", date: "2023-07-09", type: "inflow", ticker: "CASH", amount: 45.51, description: "Interest" },
+      { id: "rs24", date: "2023-07-31", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs25", date: "2023-08-01", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 26.35, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs26", date: "2023-08-01", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5292, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs27", date: "2023-08-01", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1396, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs28", date: "2023-08-02", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.15, amount: 280.9, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs29", date: "2023-08-09", type: "inflow", ticker: "CASH", amount: 0.37, description: "Interest" },
+      { id: "rs30", date: "2023-09-01", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs31", date: "2023-09-04", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5425, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs32", date: "2023-09-04", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.163, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs33", date: "2023-09-05", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.17, amount: 279.61, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs34", date: "2023-09-05", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 26.42, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs35", date: "2023-09-09", type: "inflow", ticker: "CASH", amount: 0.8, description: "Interest" },
+      { id: "rs36", date: "2023-10-02", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs37", date: "2023-10-03", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 26.96, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs38", date: "2023-10-03", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.167, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs39", date: "2023-10-03", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5592, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs40", date: "2023-10-04", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.2, amount: 280.26, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs41", date: "2023-10-09", type: "inflow", ticker: "CASH", amount: 0.4, description: "Interest" },
+      { id: "rs42", date: "2023-10-31", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs43", date: "2023-11-01", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 26.97, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs44", date: "2023-11-01", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5609, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs45", date: "2023-11-01", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1886, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs46", date: "2023-11-02", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.2, amount: 280.21, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs47", date: "2023-11-09", type: "inflow", ticker: "CASH", amount: 0.41, description: "Interest" },
+      { id: "rs48", date: "2023-12-09", type: "inflow", ticker: "CASH", amount: 0.21, description: "Interest" },
+      { id: "rs49", date: "2023-12-11", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs50", date: "2023-12-12", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 25.44, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs51", date: "2023-12-12", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5183, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs52", date: "2023-12-12", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1421, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs53", date: "2023-12-13", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.18, amount: 279.22, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs54", date: "2023-12-20", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs55", date: "2023-12-21", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 25.13, amount: 1125.0, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs56", date: "2023-12-21", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1138, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs57", date: "2023-12-21", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5083, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs58", date: "2023-12-22", type: "buy", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 1.18, amount: 280.83, sleeve: "em", description: "Buy Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs59", date: "2024-01-09", type: "inflow", ticker: "CASH", amount: 0.62, description: "Interest" },
+      { id: "rs60", date: "2024-01-24", type: "sell", ticker: "VANG_EM", name: "Vanguard Emerging Markets Stock Index Acc (GBP)", units: 71.95, amount: 16913.3, sleeve: "em", description: "Sell Vanguard Emerging Markets Stock Index Acc (GBP)" },
+      { id: "rs61", date: "2024-02-06", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 123.0, amount: 16889.0, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "rs62", date: "2024-02-06", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs63", date: "2024-02-07", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 29.72, amount: 1406.25, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs64", date: "2024-02-07", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1254, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs65", date: "2024-02-07", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.5076, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs66", date: "2024-02-09", type: "inflow", ticker: "CASH", amount: 18.37, description: "Interest" },
+      { id: "rs67", date: "2024-02-21", type: "inflow", ticker: "CASH", amount: 76870.77, description: "SIPP Transfer In" },
+      { id: "rs68", date: "2024-02-26", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 536.0, amount: 76989.71, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "rs69", date: "2024-03-05", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs70", date: "2024-03-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.4893, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs71", date: "2024-03-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 29.35, amount: 1406.25, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs72", date: "2024-03-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.1164, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs73", date: "2024-03-09", type: "inflow", ticker: "CASH", amount: 39.34, description: "Interest" },
+      { id: "rs74", date: "2024-04-04", type: "inflow", ticker: "CASH", amount: 25.38, description: "Interest" },
+      { id: "rs75", date: "2024-04-05", type: "inflow", ticker: "CASH", amount: 1875.0, description: "Employer Contribution" },
+      { id: "rs76", date: "2024-04-08", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 28.53, amount: 1406.25, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs77", date: "2024-04-08", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.0707, amount: 281.25, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs78", date: "2024-04-08", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.4774, amount: 187.5, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs79", date: "2024-04-09", type: "inflow", ticker: "CASH", amount: 0.66, description: "Interest" },
+      { id: "rs80", date: "2024-04-17", type: "sell", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 1805.53, amount: 87440.57, sleeve: "spx", description: "Sell Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs81", date: "2024-04-24", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 602.0, amount: 87403.8, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "rs82", date: "2024-05-03", type: "inflow", ticker: "CASH", amount: 2833.33, description: "Employer Contribution" },
+      { id: "rs83", date: "2024-05-07", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 42.85, amount: 2124.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs84", date: "2024-05-07", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 1.5445, amount: 424.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs85", date: "2024-05-07", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.7145, amount: 283.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs86", date: "2024-05-09", type: "inflow", ticker: "CASH", amount: 45.92, description: "Interest" },
+      { id: "rs87", date: "2024-06-05", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs88", date: "2024-06-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 12.44, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs89", date: "2024-06-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4521, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs90", date: "2024-06-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2049, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs91", date: "2024-06-09", type: "inflow", ticker: "CASH", amount: 0.51, description: "Interest" },
+      { id: "rs92", date: "2024-07-03", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs93", date: "2024-07-04", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2095, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs94", date: "2024-07-04", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4538, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs95", date: "2024-07-05", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 11.98, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs96", date: "2024-07-09", type: "inflow", ticker: "CASH", amount: 0.56, description: "Interest" },
+      { id: "rs97", date: "2024-08-05", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs98", date: "2024-08-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 12.61, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs99", date: "2024-08-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2197, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs100", date: "2024-08-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4645, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs101", date: "2024-08-07", type: "inflow", ticker: "CASH", amount: 109.19, description: "SIPP Transfer In" },
+      { id: "rs102", date: "2024-08-09", type: "inflow", ticker: "CASH", amount: 0.55, description: "Interest" },
+      { id: "rs103", date: "2024-09-05", type: "outflow", ticker: "CASH", amount: 2.4, description: "Management Fee" },
+      { id: "rs104", date: "2024-09-06", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs105", date: "2024-09-09", type: "inflow", ticker: "CASH", amount: 0.99, description: "Interest" },
+      { id: "rs106", date: "2024-09-09", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 12.44, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs107", date: "2024-09-09", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4509, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs108", date: "2024-09-09", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2143, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs109", date: "2024-10-03", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs110", date: "2024-10-04", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 11.83, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs111", date: "2024-10-04", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2125, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs112", date: "2024-10-04", type: "outflow", ticker: "CASH", amount: 21.68, description: "Management Fee" },
+      { id: "rs113", date: "2024-10-04", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.449, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs114", date: "2024-10-09", type: "inflow", ticker: "CASH", amount: 0.75, description: "Interest" },
+      { id: "rs115", date: "2024-11-05", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs116", date: "2024-11-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 11.3, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs117", date: "2024-11-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4532, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs118", date: "2024-11-06", type: "outflow", ticker: "CASH", amount: 21.89, description: "Management Fee" },
+      { id: "rs119", date: "2024-11-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2191, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs120", date: "2024-11-09", type: "inflow", ticker: "CASH", amount: 0.71, description: "Interest" },
+      { id: "rs121", date: "2024-12-04", type: "outflow", ticker: "CASH", amount: 21.92, description: "Management Fee" },
+      { id: "rs122", date: "2024-12-04", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs123", date: "2024-12-05", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 10.89, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs124", date: "2024-12-05", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4414, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs125", date: "2024-12-05", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2145, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs126", date: "2024-12-09", type: "inflow", ticker: "CASH", amount: 0.63, description: "Interest" },
+      { id: "rs127", date: "2024-12-10", type: "inflow", ticker: "CASH", amount: 2800.63, description: "SIPP Transfer In" },
+      { id: "rs128", date: "2025-01-05", type: "outflow", ticker: "CASH", amount: 22.13, description: "Management Fee" },
+      { id: "rs129", date: "2025-01-06", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 15.0, amount: 2889.87, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "rs130", date: "2025-01-07", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs131", date: "2025-01-08", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 10.81, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs132", date: "2025-01-08", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4507, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs133", date: "2025-01-08", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2147, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs134", date: "2025-01-09", type: "inflow", ticker: "CASH", amount: 6.72, description: "Interest" },
+      { id: "rs135", date: "2025-02-05", type: "outflow", ticker: "CASH", amount: 18.37, description: "Management Fee" },
+      { id: "rs136", date: "2025-02-05", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs137", date: "2025-02-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 10.59, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs138", date: "2025-02-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4245, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs139", date: "2025-02-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2018, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs140", date: "2025-02-09", type: "inflow", ticker: "CASH", amount: 0.29, description: "Interest" },
+      { id: "rs141", date: "2025-03-05", type: "outflow", ticker: "CASH", amount: 22.13, description: "Management Fee" },
+      { id: "rs142", date: "2025-03-05", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs143", date: "2025-03-06", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4278, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs144", date: "2025-03-06", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 11.64, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs145", date: "2025-03-06", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.1949, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs146", date: "2025-03-09", type: "inflow", ticker: "CASH", amount: 0.22, description: "Interest" },
+      { id: "rs147", date: "2025-04-03", type: "outflow", ticker: "CASH", amount: 22.62, description: "Management Fee" },
+      { id: "rs148", date: "2025-04-03", type: "inflow", ticker: "CASH", amount: 833.33, description: "Employer Contribution" },
+      { id: "rs149", date: "2025-04-04", type: "buy", ticker: "VANG_US500", name: "Vanguard US 500 Stock Index Institutional - Acc (USD)", units: 13.17, amount: 624.99, sleeve: "spx", description: "Buy Vanguard US 500 Stock Index Institutional - Acc (USD)" },
+      { id: "rs150", date: "2025-04-04", type: "buy", ticker: "VANG_UK", name: "Vanguard FTSE UK All Share Index Acc (GBP)", units: 0.4609, amount: 124.99, sleeve: "ftse", description: "Buy Vanguard FTSE UK All Share Index Acc (GBP)" },
+      { id: "rs151", date: "2025-04-04", type: "buy", ticker: "VANG_EUEX", name: "Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)", units: 0.2168, amount: 83.33, sleeve: "other", description: "Buy Vanguard FTSE Developed Europe ex-UK Equity Index Acc (GBP)" },
+      { id: "rs152", date: "2025-04-09", type: "inflow", ticker: "CASH", amount: 0.17, description: "Interest" },
+      { id: "rs153", date: "2025-05-04", type: "outflow", ticker: "CASH", amount: 27.42, description: "Management Fee" },
+      { id: "rs154", date: "2025-05-06", type: "inflow", ticker: "CASH", amount: 1178.78, description: "Employer Contribution" },
+      { id: "rs155", date: "2025-05-07", type: "buy", ticker: "HLGROWTH", name: "HL Growth Fund Accumulation (GBP)", units: 1058.246, amount: 1178.78, sleeve: "other", description: "Buy HL Growth Fund Accumulation (GBP)" },
+      { id: "rs156", date: "2025-05-09", type: "inflow", ticker: "CASH", amount: 0.14, description: "Interest" },
+      { id: "rs157", date: "2025-06-02", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs158", date: "2025-06-05", type: "outflow", ticker: "CASH", amount: 23.14, description: "Management Fee" },
+      { id: "rs159", date: "2025-06-09", type: "inflow", ticker: "CASH", amount: 0.47, description: "Interest" },
+      { id: "rs160", date: "2025-06-27", type: "buy", ticker: "EMRD.L", name: "SPDR MSCI Emerging Markets UCITS ETF", units: 270.0, amount: 14486.51, sleeve: "em", description: "Buy SPDR MSCI Emerging Markets UCITS ETF" },
+      { id: "rs161", date: "2025-06-27", type: "buy", ticker: "LBUL.L", name: "WisdomTree Gold 2x Daily Leveraged", units: 77.0, amount: 7322.88, sleeve: "gold", description: "Buy WisdomTree Gold 2x Daily Leveraged" },
+      { id: "rs162", date: "2025-06-27", type: "buy", ticker: "MSE.PA", name: "Amundi Euro Stoxx 50 (DR) UCITS ETF Acc", units: 889.0, amount: 44716.54, sleeve: "other", description: "Buy Amundi Euro Stoxx 50 (DR) UCITS ETF Acc" },
+      { id: "rs163", date: "2025-06-27", type: "sell", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 567.0, amount: 101051.56, sleeve: "spx", description: "Sell Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "rs164", date: "2025-06-30", type: "buy", ticker: "PICTET", name: "Pictet Robotics Class I - Accumulation (GBP)", units: 61.47982, amount: 20000.0, sleeve: "ndx", description: "Buy Pictet Robotics Class I - Accumulation (GBP)" },
+      { id: "rs165", date: "2025-07-01", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs166", date: "2025-07-04", type: "outflow", ticker: "CASH", amount: 25.44, description: "Management Fee" },
+      { id: "rs167", date: "2025-07-09", type: "inflow", ticker: "CASH", amount: 10.26, description: "Interest" },
+      { id: "rs168", date: "2025-07-09", type: "buy", ticker: "ARKA.L", name: "Ark Artificial Intelligence & Robotics UCITS ETF", units: 2490.0, amount: 15999.62, sleeve: "ndx", description: "Buy Ark Artificial Intelligence & Robotics UCITS ETF" },
+      { id: "rs169", date: "2025-07-29", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs170", date: "2025-08-06", type: "outflow", ticker: "CASH", amount: 26.12, description: "Management Fee" },
+      { id: "rs171", date: "2025-08-09", type: "inflow", ticker: "CASH", amount: 1.05, description: "Interest" },
+      { id: "rs172", date: "2025-09-01", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs173", date: "2025-09-03", type: "outflow", ticker: "CASH", amount: 26.14, description: "Management Fee" },
+      { id: "rs174", date: "2025-09-09", type: "inflow", ticker: "CASH", amount: 2.5, description: "Interest" },
+      { id: "rs175", date: "2025-09-30", type: "buy", ticker: "LBUL.L", name: "WisdomTree Gold 2x Daily Leveraged", units: 13.0, amount: 1672.74, sleeve: "gold", description: "Buy WisdomTree Gold 2x Daily Leveraged" },
+      { id: "rs176", date: "2025-10-01", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs177", date: "2025-10-05", type: "outflow", ticker: "CASH", amount: 26.14, description: "Management Fee" },
+      { id: "rs178", date: "2025-10-09", type: "inflow", ticker: "CASH", amount: 2.88, description: "Interest" },
+      { id: "rs179", date: "2025-11-03", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs180", date: "2025-11-05", type: "outflow", ticker: "CASH", amount: 27.06, description: "Management Fee" },
+      { id: "rs181", date: "2025-11-09", type: "inflow", ticker: "CASH", amount: 2.22, description: "Interest" },
+      { id: "rs182", date: "2025-11-28", type: "buy", ticker: "WT_NATGAS3X", name: "WisdomTree Natural Gas 3x Daily Leveraged", units: 337.0, amount: 1707.13, sleeve: "other", description: "Buy WisdomTree Natural Gas 3x Daily Leveraged" },
+      { id: "rs183", date: "2025-12-02", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs184", date: "2025-12-03", type: "outflow", ticker: "CASH", amount: 26.5, description: "Management Fee" },
+      { id: "rs185", date: "2025-12-09", type: "inflow", ticker: "CASH", amount: 2.46, description: "Interest" },
+      { id: "rs186", date: "2025-12-24", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs187", date: "2026-01-06", type: "outflow", ticker: "CASH", amount: 27.05, description: "Management Fee" },
+      { id: "rs188", date: "2026-01-09", type: "inflow", ticker: "CASH", amount: 2.59, description: "Interest" },
+      { id: "rs189", date: "2026-02-02", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs190", date: "2026-02-04", type: "outflow", ticker: "CASH", amount: 27.2, description: "Management Fee" },
+      { id: "rs191", date: "2026-02-09", type: "inflow", ticker: "CASH", amount: 3.2, description: "Interest" },
+      { id: "rs192", date: "2026-02-19", type: "buy", ticker: "LS_AMZN2X", name: "Leverage Shares 2x Amazon ETP", units: 52.0, amount: 2343.01, sleeve: "ndx", description: "Buy Leverage Shares 2x Amazon ETP" },
+      { id: "rs193", date: "2026-02-24", type: "sell", ticker: "WT_NATGAS3X", name: "WisdomTree Natural Gas 3x Daily Leveraged", units: 337.0, amount: 383.22, sleeve: "other", description: "Sell WisdomTree Natural Gas 3x Daily Leveraged" },
+      { id: "rs194", date: "2026-03-02", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs195", date: "2026-03-04", type: "outflow", ticker: "CASH", amount: 26.43, description: "Management Fee" },
+      { id: "rs196", date: "2026-03-09", type: "inflow", ticker: "CASH", amount: 1.95, description: "Interest" },
+      { id: "rs197", date: "2026-03-31", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs198", date: "2026-04-04", type: "outflow", ticker: "CASH", amount: 22.54, description: "Management Fee" },
+      { id: "rs199", date: "2026-04-09", type: "inflow", ticker: "CASH", amount: 2.69, description: "Interest" },
+      { id: "rs200", date: "2026-04-28", type: "sell", ticker: "LS_AMZN2X", name: "Leverage Shares 2x Amazon ETP", units: 52.0, amount: 3597.3, sleeve: "ndx", description: "Sell Leverage Shares 2x Amazon ETP" },
+      { id: "rs201", date: "2026-05-06", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs202", date: "2026-05-09", type: "inflow", ticker: "CASH", amount: 5.74, description: "Interest" },
+      { id: "rs203", date: "2026-05-12", type: "outflow", ticker: "CASH", amount: 22.82, description: "Management Fee" },
+      { id: "rs204", date: "2026-06-01", type: "inflow", ticker: "CASH", amount: 832.83, description: "Employer Contribution" },
+      { id: "rs205", date: "2026-06-03", type: "outflow", ticker: "CASH", amount: 23.96, description: "Management Fee" },
+    ],
     saba: [
       { id: "sx-DAGB", date: "2022-06-12", type: "buy", ticker: "DAGB", name: "VanEck UCITS ETF", units: 4173.0, amount: 0, sleeve: "other", description: "Transfer in (in-specie) VanEck UCITS ETF" },
       { id: "sx-IB01", date: "2022-06-12", type: "buy", ticker: "IB01", name: "iShares $ Treasury Bond 0-1yr UCITS ETF", units: 449.0, amount: 0, sleeve: "other", description: "Transfer in (in-specie) iShares $ Treasury Bond 0-1yr UCITS ETF" },
@@ -2041,22 +2265,48 @@
     return holdings;
   }
 
+  // Per-ticker price timeline derived from buy/sell transactions, used to
+  // value tickers that aren't in the live price feed (e.g. closed positions
+  // and funds) accurately over history, instead of a flat fallback.
+  let _txPrices = null;
+  function buildTxPrices() {
+    const m = {};
+    (state.transactions || []).forEach(t => {
+      if ((t.type === 'buy' || t.type === 'sell') && t.ticker && t.ticker !== 'CASH' && t.units && t.amount) {
+        const pence = (Math.abs(t.amount) / t.units) * 100;
+        if (isFinite(pence) && pence > 0) (m[t.ticker] = m[t.ticker] || []).push({ date: t.date, pence });
+      }
+    });
+    for (const k in m) m[k].sort((a, b) => a.date.localeCompare(b.date));
+    _txPrices = m;
+  }
+  function txPriceAsOf(ticker, date) {
+    const arr = _txPrices && _txPrices[ticker];
+    if (!arr || !arr.length) return null;
+    let p = null;
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i].date <= date) p = arr[i].pence; else break;
+    }
+    return p !== null ? p : arr[0].pence; // fall back to first known price
+  }
+
   function calculateHoldingsValue(holdings, date, priceDb) {
     let total = 0;
     const dateIdx = priceDb.dates.indexOf(date);
-    
+
     for (const ticker in holdings) {
       const qty = holdings[ticker];
       if (qty === 0) continue;
-      
+
       if (ticker === 'CASH') {
         total += qty;
       } else {
-        let pricePence = 0;
+        let pricePence;
         if (dateIdx !== -1 && priceDb.prices[ticker] && priceDb.prices[ticker][dateIdx] !== undefined) {
-          pricePence = priceDb.prices[ticker][dateIdx];
+          pricePence = priceDb.prices[ticker][dateIdx];           // live feed
         } else {
-          pricePence = getFallbackPrice(ticker);
+          const txp = txPriceAsOf(ticker, date);                  // transaction-implied
+          pricePence = (txp !== null) ? txp : getFallbackPrice(ticker);
         }
         total += qty * (pricePence / 100.0);
       }
@@ -2486,6 +2736,7 @@
 
   function updateChart() {
     if (!performanceChart || !historicalPriceDb) return;
+    buildTxPrices();
     
     if (selectedChartAccounts.length === 0) {
       performanceChart.data.labels = [];
