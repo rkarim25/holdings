@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CGT — Holdings Tracker</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f5f7;
+      --panel: rgba(255, 255, 255, 0.78);
+      --panel-solid: #ffffff;
+      --text: #1d1d1f;
+      --muted: #86868b;
+      --line: rgba(0, 0, 0, 0.08);
+      --accent: #0071e3;
+      --accent-soft: rgba(0, 113, 227, 0.08);
+      --good: #248a3d;
+      --good-soft: rgba(36, 138, 61, 0.08);
+      --bad: #d70015;
+      --bad-soft: rgba(215, 0, 21, 0.08);
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.04);
+      --border-radius: 20px;
+      
+      /* Sleeve Colors */
+      --color-spx: #0071e3;
+      --color-ndx: #86198f;
+      --color-ftse: #d97706;
+      --color-em: #059669;
+      --color-gold: #eab308;
+      --color-cash: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top left, rgba(0, 113, 227, 0.06), transparent 40rem),
+                  linear-gradient(180deg, #fbfbfd 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      width: min(1200px, calc(100vw - 32px));
+      margin: 40px auto 60px;
+      flex: 1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--border-radius);
+      background: var(--panel);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      margin-bottom: 20px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Tabs Selector */
+    .tabs-container {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      background: rgba(0, 0, 0, 0.02);
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(0, 113, 227, 0.15);
+    }
+
+    /* Table styles */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.01);
+    }
+
+    /* Keep column titles visible while scrolling through a table */
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #f4f4f6;
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+
+    .account-header-row td { cursor: pointer; }
+    .acct-collapse-arrow {
+      display: inline-block;
+      width: 14px;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .account-header-row {
+      background: rgba(0, 113, 227, 0.04);
+      border-bottom: 1px solid rgba(0, 113, 227, 0.12);
+    }
+
+    .account-header-row td {
+      padding: 10px 12px;
+      color: var(--accent);
+      border-top: 1px solid var(--line);
+    }
+
+    .account-subtotal-row {
+      background: rgba(0, 0, 0, 0.015);
+      font-weight: 600;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .account-subtotal-row td {
+      padding: 8px 10px;
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Editable Input Fields */
+    .holding-input {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      border-radius: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .holding-input:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .holding-input:focus {
+      background: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+      outline: none;
+    }
+
+    select.holding-input {
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      padding-right: 6px;
+    }
+
+    /* Remove the native dropdown arrow across engines */
+    select.holding-input::-ms-expand {
+      display: none;
+    }
+
+    /* Keep the focus/open state clean — no dashed native outline */
+    select.holding-input:focus,
+    select.holding-input:focus-visible {
+      outline: none;
+    }
+
+    /* Account view tabs (Family / Abbu) */
+    .account-tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .account-tab {
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .account-tab:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+    .account-tab.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* "Include in totals" account checkboxes */
+    .total-account-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+    }
+    .total-account-filter label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .total-account-filter input {
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    /* Badges & Color indicators */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .badge-passive {
+      background: rgba(0,0,0,0.04);
+      color: var(--muted);
+    }
+
+    .gain-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gain-pill.good {
+      background: var(--good-soft);
+      color: var(--good);
+    }
+
+    .gain-pill.bad {
+      background: var(--bad-soft);
+      color: var(--bad);
+    }
+
+    .color-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .dot-spx { background-color: var(--color-spx); }
+    .dot-ndx { background-color: var(--color-ndx); }
+    .dot-ftse { background-color: var(--color-ftse); }
+    .dot-em { background-color: var(--color-em); }
+    .dot-gold { background-color: var(--color-gold); }
+    .dot-cash { background-color: var(--color-cash); }
+
+    /* Buttons */
+    button, .action-btn {
+      border: 1px solid transparent;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.15);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 113, 227, 0.25);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    button.secondary:hover {
+      background: #ffffff;
+      border-color: var(--muted);
+    }
+
+    .btn-delete-holding {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .btn-delete-holding:hover {
+      background: var(--bad-soft);
+      color: var(--bad);
+    }
+
+    /* Lock Screen Layout */
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top left, rgba(0, 113, 227, 0.08), transparent 40rem),
+                  linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
+    }
+
+    .lock-card {
+      width: min(400px, 90vw);
+      text-align: center;
+      padding: 32px;
+      border-radius: 28px;
+    }
+
+    .lock-input {
+      width: 100%;
+      border-radius: 12px;
+      padding: 12px 18px;
+      text-align: center;
+      font-size: 20px;
+      letter-spacing: 0.1em;
+      margin: 20px 0;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .lock-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+    }
+
+    .small { font-size: 13px; color: var(--muted); }
+    .bad { color: var(--bad); }
+    .good { color: var(--good); }
+
+    /* Account Totals Board */
+    .totals-board {
+      display: flex;
+      justify-content: flex-end;
+      gap: 32px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+      text-align: right;
+    }
+
+    .total-item-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .total-item-val {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Top utility row */
+    .utility-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    #equityPerformanceChart {
+      touch-action: none;
+      cursor: grab;
+    }
+    #equityPerformanceChart:active {
+      cursor: grabbing;
+    }
+  </style>
+</head>
+
+<body>
+<main style="display:block;">
+  <header>
+    <div>
+      <h1>Capital Gains Tax</h1>
+      <p class="subtitle">Estimated CGT across taxable (GIA) accounts — Saba Investment Account &amp; Abbu Investment Account.</p>
+      <nav class="account-tabs" aria-label="Account view">
+        <a href="../" class="account-tab">Family</a>
+        <a href="../abbu/" class="account-tab">Abbu</a>
+        <a href="./" class="account-tab active" aria-current="page">CGT</a>
+      </nav>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="small" style="color:var(--muted);">CGT rate</span>
+      <select id="cgtRateSel" onchange="setRate(this.value)" style="border:1px solid var(--line); background:white; border-radius:6px; padding:5px 8px; font-size:13px;">
+        <option value="0.18">Basic 18%</option>
+        <option value="0.24" selected>Higher 24%</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- SUMMARY -->
+  <section class="card" style="margin-bottom:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:16px;">
+      <h3 style="font-size:18px; font-weight:700;">Allowance &amp; estimated CGT <span class="small" style="color:var(--muted); font-weight:500;">(tax year 2026/27)</span></h3>
+      <span id="cgtEstimateBig" class="total-item-val" style="font-size:22px; font-weight:800; color:var(--bad);">£0</span>
+    </div>
+    <div id="cgtSummaryGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px 24px;"></div>
+  </section>
+
+  <!-- PER-HOLDING -->
+  <section class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:18px; font-weight:700; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:16px;">Per-holding CGT</h3>
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:20%;">Holding</th>
+            <th style="width:14%;">Account</th>
+            <th style="text-align:right;">Units</th>
+            <th style="text-align:right;">Cost</th>
+            <th style="text-align:right;">Market Value</th>
+            <th style="text-align:right;">Unrealised Gain</th>
+            <th style="text-align:right;" title="Gain per single unit">Gain / unit</th>
+            <th style="text-align:right;" title="CGT per single unit sold (before allowance)">CGT / unit</th>
+            <th style="text-align:right;" title="CGT if you sold the whole holding now (before allowance)">CGT (sell all)</th>
+            <th style="text-align:right;" title="Units you could sell tax-free if the whole remaining allowance were applied to this holding">Tax-free units*</th>
+          </tr>
+        </thead>
+        <tbody id="cgtRows"></tbody>
+      </table>
+    </div>
+    <p class="small" style="color:var(--muted); margin-top:12px;">
+      * Per-holding figures use the gross CGT rate; the £3,000 annual exemption is applied once across all holdings (see the summary). The
+      "Tax-free units" column assumes the <em>entire</em> remaining allowance is used on that one holding — it's a what-if, not additive across rows.
+      Transferred-in securities (Saba's XS2D &amp; gilt) and tax-free wrappers (ISA / SIPP / JISA) are excluded. Abbu has no transaction
+      history imported, so its holdings are treated as bought (no realised gains).
+    </p>
+  </section>
+</main>
+
+<script>
+  const CGT_ALLOWANCE = 3000;     // 2026/27 annual exempt amount
+  let allowanceUsed = 0;          // assumed: nothing used in 2025/26 or 2026/27
+  let carriedLosses = 0;          // assumed: no losses carried forward
+  let cgtRate = 0.24;
+
+  // CGT-eligible holdings in the taxable accounts (keep in sync with the
+  // family Saba account and the Abbu page).
+  const TAXABLE_HOLDINGS = [
+    { account: "Saba Investment Account", name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 2062, cost: 12841.61, pricePence: 1636.40 },
+    { account: "Abbu Investment Account", name: "iShares Core EURO STOXX 50 UCITS ETF",        ticker: "EUE",    units: 399,  cost: 18396.37, pricePence: 5442.00 },
+    { account: "Abbu Investment Account", name: "iShares S&P 500 Communication Sector UCITS ETF", ticker: "IUCM", units: 814,  cost: 8409.69,  pricePence: 1047.75 },
+    { account: "Abbu Investment Account", name: "VanEck Morningstar US Sustainable Wide Moat",  ticker: "MOAT",   units: 863,  cost: 34330.99, pricePence: 4623.40 },
+    { account: "Abbu Investment Account", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 390, cost: 56028.30, pricePence: 25379.00 }
+  ];
+
+  const gbp = v => new Intl.NumberFormat('en-GB', { style:'currency', currency:'GBP', maximumFractionDigits:2 }).format(v);
+  const gbp4 = v => new Intl.NumberFormat('en-GB', { style:'currency', currency:'GBP', maximumFractionDigits:4 }).format(v);
+
+  window.setRate = function (v) { cgtRate = parseFloat(v); render(); };
+
+  function render() {
+    const rate = cgtRate;
+    const remaining = Math.max(0, CGT_ALLOWANCE - allowanceUsed);
+    let totalGain = 0;
+    const tbody = document.getElementById('cgtRows');
+    tbody.innerHTML = TAXABLE_HOLDINGS.map(h => {
+      const mv = h.units * h.pricePence / 100;
+      const gain = mv - h.cost;
+      totalGain += gain;
+      const gpu = h.units ? gain / h.units : 0;
+      const cgtAll = Math.max(0, gain) * rate;
+      const cgtUnit = Math.max(0, gpu) * rate;
+      const tfUnits = gpu > 0 ? Math.min(h.units, Math.floor(remaining / gpu)) : h.units;
+      const gc = gain >= 0 ? 'var(--good)' : 'var(--bad)';
+      return `<tr>
+        <td style="font-weight:600;">${h.name}</td>
+        <td class="small">${h.account}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${h.units.toLocaleString()}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${gbp(h.cost)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${gbp(mv)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:${gc};">${gain >= 0 ? '+' : ''}${gbp(gain)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums; color:${gc};">${gbp4(gpu)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${gbp4(cgtUnit)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:${cgtAll > 0 ? 'var(--bad)' : 'var(--muted)'};">${gbp(cgtAll)}</td>
+        <td style="text-align:right; font-variant-numeric:tabular-nums;">${tfUnits.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+
+    const gainAfterLosses = totalGain - carriedLosses;
+    const taxFreeNow = Math.min(Math.max(0, gainAfterLosses), remaining);  // gain realisable tax-free now
+    const taxableGain = Math.max(0, gainAfterLosses - remaining);
+    const estCGT = taxableGain * rate;
+
+    document.getElementById('cgtEstimateBig').textContent = gbp(estCGT);
+    const item = (label, value, color, sub) =>
+      `<div><div class="total-item-lbl">${label}</div><div class="total-item-val" style="${color ? 'color:' + color + ';' : ''}">${value}</div>${sub ? '<div class="small" style="color:var(--muted);">' + sub + '</div>' : ''}</div>`;
+    document.getElementById('cgtSummaryGrid').innerHTML =
+      item('Total unrealised gain', (totalGain >= 0 ? '+' : '') + gbp(totalGain), totalGain >= 0 ? 'var(--good)' : 'var(--bad)') +
+      item('Carried-forward losses', gbp(carriedLosses), 'var(--muted)', 'assumed none') +
+      item('Annual exemption', gbp(CGT_ALLOWANCE), null, 'tax year 2026/27') +
+      item('Allowance used', gbp(allowanceUsed), 'var(--muted)', 'assumed none') +
+      item('Allowance remaining', gbp(remaining), 'var(--good)') +
+      item('Tax-free gain (realisable now)', gbp(taxFreeNow), 'var(--good)', 'CGT on this: £0.00') +
+      item('Taxable gain (after exemption)', gbp(taxableGain), null) +
+      item('Estimated CGT @ ' + Math.round(rate * 100) + '%', gbp(estCGT), 'var(--bad)');
+  }
+
+  async function loadPrices() {
+    try {
+      const res = await fetch('https://rkarim25.github.io/Strategy/holdings_prices.json?v=' + Date.now());
+      if (res.ok) {
+        const pm = (await res.json()).prices || {};
+        TAXABLE_HOLDINGS.forEach(h => { const k = h.ticker.toUpperCase(); if (pm[k] !== undefined) h.pricePence = pm[k]; });
+      }
+    } catch (e) {}
+    render();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => { render(); loadPrices(); });
+</script>
+</body>
+</html>
