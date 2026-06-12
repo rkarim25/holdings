@@ -642,6 +642,57 @@
   </section>
 
   <!-- TRANSACTION LEDGER CARD -->
+  <!-- CAPITAL GAINS TAX CARD (taxable accounts) -->
+  <section class="card" id="cgtCard" style="display: none; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px;">
+      <h3 style="font-size: 18px; font-weight: 700; color: var(--text);">🧾 Capital Gains Tax (Estimated)</h3>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="small" style="color: var(--muted);">CGT rate</span>
+        <select id="cgtRateSel" class="holding-input" onchange="setCgtRate(this.value)" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px;">
+          <option value="0.18">Basic 18%</option>
+          <option value="0.24" selected>Higher 24%</option>
+        </select>
+      </div>
+    </div>
+    <p class="small" style="color: var(--muted); margin-bottom: 12px;">
+      Estimated CGT on <strong>unrealised gains</strong> in taxable (GIA) accounts only. Excludes transferred-in securities and tax-free wrappers (ISA / SIPP / JISA).
+    </p>
+    <div class="table-wrap" style="margin-bottom: 16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Holding</th>
+            <th>Account</th>
+            <th style="text-align: right;">Cost</th>
+            <th style="text-align: right;">Market Value</th>
+            <th style="text-align: right;">Unrealised Gain</th>
+          </tr>
+        </thead>
+        <tbody id="cgtTableBody"><!-- Rendered dynamically --></tbody>
+      </table>
+    </div>
+    <div class="utility-row" style="justify-content: flex-end;">
+      <div class="totals-board">
+        <div>
+          <div class="total-item-lbl">Total taxable gain</div>
+          <div id="cgtTotalGain" class="total-item-val">£0</div>
+        </div>
+        <div>
+          <div class="total-item-lbl">Annual exempt</div>
+          <div id="cgtAllowance" class="total-item-val">−£3,000</div>
+        </div>
+        <div>
+          <div class="total-item-lbl">Gain after allowance</div>
+          <div id="cgtTaxable" class="total-item-val">£0</div>
+        </div>
+        <div>
+          <div class="total-item-lbl">Estimated CGT</div>
+          <div id="cgtEstimate" class="total-item-val" style="font-weight: 800; color: var(--bad);">£0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="card" id="ledgerCard" style="display: none; margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid var(--line); padding-bottom: 12px;" onclick="toggleLedgerSection()">
       <h3 style="font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
@@ -652,18 +703,43 @@
     </div>
 
     <div id="ledgerContent" style="display: none; margin-top: 16px;">
+      <!-- Filters -->
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px;">
+        <div>
+          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Account</label>
+          <select id="ledgerFilterAccount" class="holding-input" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; min-width: 170px;"></select>
+        </div>
+        <div>
+          <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Type</label>
+          <select id="ledgerFilterCategory" class="holding-input" onchange="setLedgerFilter()" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; min-width: 150px;">
+            <option value="all">All types</option>
+            <option value="Buy">Buy</option>
+            <option value="Sell">Sell</option>
+            <option value="Deposit">Deposit</option>
+            <option value="Withdrawal">Withdrawal</option>
+            <option value="Fee">Fee</option>
+            <option value="Interest">Interest</option>
+            <option value="Dividend">Dividend</option>
+            <option value="Transfer In">Transfer In</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Summary bar for the current filter -->
+      <div id="ledgerSummaryBar" class="small" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; color: var(--muted);"></div>
+
       <!-- Table wrap for ledger -->
-      <div class="table-wrap" style="margin-bottom: 16px; max-height: 250px; overflow-y: auto;">
+      <div class="table-wrap" style="margin-bottom: 16px; max-height: 360px; overflow-y: auto;">
         <table>
           <thead>
             <tr>
               <th style="width: 12%;">Date</th>
-              <th style="width: 18%;">Account</th>
-              <th style="width: 12%;">Type</th>
-              <th style="width: 15%;">Ticker</th>
-              <th style="width: 15%; text-align: right;">Units</th>
-              <th style="width: 18%; text-align: right;">Amount (£)</th>
-              <th style="width: 10%; text-align: center;">Action</th>
+              <th style="width: 22%;">Account</th>
+              <th style="width: 13%;">Type</th>
+              <th style="width: 12%;">Ticker</th>
+              <th style="width: 14%; text-align: right;">Units</th>
+              <th style="width: 17%; text-align: right;">Amount (£)</th>
+              <th style="width: 8%; text-align: center;">Action</th>
             </tr>
           </thead>
           <tbody id="ledgerTableBody">
@@ -797,8 +873,8 @@
       name: "Saba Investment Account",
       holdings: [
         { name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 2062, pricePence: 1636.40, cost: 12841.61, sleeve: "ndx", entryDate: "2024-05-23" },
-        { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 722, pricePence: 25384.00, cost: 111111.83, sleeve: "spx", entryDate: "2022-06-12" },
-        { name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", ticker: "TG61", units: 0.13, pricePence: 23.46, cost: 0.04, sleeve: "other", entryDate: "2023-04-06" },
+        { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 722, pricePence: 25384.00, cost: 111111.83, sleeve: "spx", entryDate: "2022-06-12", transferredIn: true },
+        { name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", ticker: "TG61", units: 0.13, pricePence: 23.46, cost: 0.04, sleeve: "other", entryDate: "2023-04-06", transferredIn: true },
         { name: "Cash (HL Account Balance)", ticker: "CASH", units: 139292.03, pricePence: 100.0, cost: 139292.03, sleeve: "cash" }
       ]
     },
@@ -1569,6 +1645,7 @@
     }
 
     recomputeGrandTotals();
+    renderCGT();
   }
 
   async function fetchLivePrices() {
@@ -1761,7 +1838,7 @@
       { id: "sb2", date: "2023-04-06", type: "buy", ticker: "TG61", name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", units: 16888.0, amount: 6351.58, sleeve: "other", description: "Buy UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
       { id: "sb3", date: "2023-04-06", type: "inflow", ticker: "CASH", amount: 10000.0, description: "Debit card payment" },
       { id: "sb4", date: "2023-04-06", type: "inflow", ticker: "CASH", amount: 100.0, description: "Debit card payment" },
-      { id: "sb5", date: "2023-04-24", type: "sell", ticker: "TG61", name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", units: null, amount: 67.22, sleeve: "other", description: "Sell UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
+      { id: "sb5", date: "2023-04-24", type: "inflow", ticker: "CASH", amount: 67.22, description: "Dividend: UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
       { id: "sb6", date: "2023-04-27", type: "inflow", ticker: "CASH", amount: 9397.9, description: "Trf from IG Group" },
       { id: "sb7", date: "2023-05-04", type: "sell", ticker: "IB01", name: "iShares $ Treasury Bond 0-1yr UCITS ETF", units: 135.0, amount: 11068.44, sleeve: "other", description: "Sell iShares $ Treasury Bond 0-1yr UCITS ETF" },
       { id: "sb8", date: "2023-05-09", type: "outflow", ticker: "CASH", amount: 16000.0, description: "2023/24 ISA Subscription re 5669918" },
@@ -1785,7 +1862,7 @@
       { id: "sb26", date: "2023-09-12", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
       { id: "sb27", date: "2023-09-26", type: "inflow", ticker: "CASH", amount: 2.56, description: "GROSS INTEREST" },
       { id: "sb28", date: "2023-10-10", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
-      { id: "sb29", date: "2023-10-23", type: "sell", ticker: "TG61", name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", units: null, amount: 154.72, sleeve: "other", description: "Sell UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
+      { id: "sb29", date: "2023-10-23", type: "inflow", ticker: "CASH", amount: 154.72, description: "Dividend: UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
       { id: "sb30", date: "2023-10-26", type: "inflow", ticker: "CASH", amount: 2.14, description: "GROSS INTEREST" },
       { id: "sb31", date: "2023-11-10", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
       { id: "sb32", date: "2023-11-29", type: "inflow", ticker: "CASH", amount: 2.4, description: "GROSS INTEREST" },
@@ -1807,7 +1884,7 @@
       { id: "sb48", date: "2024-03-12", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
       { id: "sb49", date: "2024-03-26", type: "inflow", ticker: "CASH", amount: 2.92, description: "GROSS INTEREST" },
       { id: "sb50", date: "2024-04-10", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
-      { id: "sb51", date: "2024-04-22", type: "sell", ticker: "TG61", name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", units: null, amount: 154.72, sleeve: "other", description: "Sell UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
+      { id: "sb51", date: "2024-04-22", type: "inflow", ticker: "CASH", amount: 154.72, description: "Dividend: UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
       { id: "sb52", date: "2024-04-24", type: "sell", ticker: "FCNCA", name: "First Citizens BancShares", units: 7.0, amount: 9026.71, sleeve: "other", description: "Sell First Citizens BancShares" },
       { id: "sb53", date: "2024-04-26", type: "inflow", ticker: "CASH", amount: 0.5, description: "GROSS INTEREST" },
       { id: "sb54", date: "2024-05-10", type: "outflow", ticker: "CASH", amount: 19.99, description: "Total Monthly Fee" },
@@ -1830,7 +1907,7 @@
       { id: "sb71", date: "2024-09-10", type: "inflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
       { id: "sb72", date: "2024-10-10", type: "outflow", ticker: "CASH", amount: 29.99, description: "Total Monthly Fee" },
       { id: "sb73", date: "2024-10-10", type: "inflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
-      { id: "sb74", date: "2024-10-22", type: "sell", ticker: "TG61", name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", units: null, amount: 154.72, sleeve: "other", description: "Sell UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
+      { id: "sb74", date: "2024-10-22", type: "inflow", ticker: "CASH", amount: 154.72, description: "Dividend: UNITED KINGDOM 0.5% 22/10/2061 (Gilt)" },
       { id: "sb75", date: "2024-10-28", type: "inflow", ticker: "CASH", amount: 0.02, description: "GROSS INTEREST" },
       { id: "sb76", date: "2024-11-11", type: "outflow", ticker: "CASH", amount: 29.99, description: "Total Monthly Fee" },
       { id: "sb77", date: "2024-11-26", type: "inflow", ticker: "CASH", amount: 0.21, description: "GROSS INTEREST" },
@@ -2420,9 +2497,12 @@
     
     const dates = historicalPriceDb.dates;
     if (dates.length === 0) return;
-    const absMinDate = dates[0];
     const absMaxDate = dates[dates.length - 1];
-    
+    // Cap history at 4 years before the latest date — nothing older is charted.
+    const fl = new Date(absMaxDate);
+    const floorDate = toISOStringDate(new Date(fl.getFullYear() - 4, fl.getMonth(), fl.getDate()).getTime());
+    const absMinDate = dates[0] > floorDate ? dates[0] : floorDate;
+
     if (!displayStartDate || displayStartDate < absMinDate) displayStartDate = absMinDate;
     if (!displayEndDate || displayEndDate > absMaxDate) displayEndDate = absMaxDate;
     if (displayStartDate > displayEndDate) displayStartDate = displayEndDate;
@@ -2511,50 +2591,160 @@
     }
   };
 
+  // --- Transaction categorisation (drives the log filters, badges & summary) ---
+  const CATEGORY_META = {
+    'Buy':         { color: '#0071e3' },
+    'Sell':        { color: '#d97706' },
+    'Deposit':     { color: '#34c759' },
+    'Withdrawal':  { color: '#ff3b30' },
+    'Fee':         { color: '#ff9500' },
+    'Interest':    { color: '#30b0c7' },
+    'Dividend':    { color: '#af52de' },
+    'Transfer In': { color: '#8e8e93' },
+    'Other':       { color: '#86868b' }
+  };
+
+  function categorizeTx(t) {
+    const d = (t.description || '').toLowerCase();
+    if (t.type === 'buy') return d.indexOf('transfer in') !== -1 ? 'Transfer In' : 'Buy';
+    if (t.type === 'sell') return 'Sell';
+    if (t.type === 'inflow') {
+      if (d.indexOf('interest') !== -1) return 'Interest';
+      if (d.indexOf('div') !== -1) return 'Dividend';
+      return 'Deposit';
+    }
+    if (t.type === 'outflow') {
+      if (d.indexOf('fee') !== -1) return 'Fee';
+      return 'Withdrawal';
+    }
+    return 'Other';
+  }
+
+  let ledgerFilterAccount = 'all';
+  let ledgerFilterCategory = 'all';
+
+  window.setLedgerFilter = function () {
+    ledgerFilterAccount = document.getElementById('ledgerFilterAccount').value;
+    ledgerFilterCategory = document.getElementById('ledgerFilterCategory').value;
+    renderLedgerTable();
+  };
+
   function renderLedgerTable() {
     const tbody = document.getElementById('ledgerTableBody');
     const summary = document.getElementById('ledgerSummaryText');
     if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    const sorted = [...state.transactions].sort((a, b) => b.date.localeCompare(a.date));
-    summary.textContent = `${ledgerExpanded ? 'Click to collapse' : 'Click to expand'} (${state.transactions.length} records)`;
-    
-    if (sorted.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); font-style: italic;">No transactions recorded.</td></tr>`;
+
+    // Populate the account filter once, from ACCOUNTS.
+    const acctSel = document.getElementById('ledgerFilterAccount');
+    if (acctSel && acctSel.dataset.filled !== '1') {
+      let opts = '<option value="all">All accounts</option>';
+      for (const id in ACCOUNTS) opts += `<option value="${id}">${ACCOUNTS[id].name}</option>`;
+      acctSel.innerHTML = opts;
+      acctSel.dataset.filled = '1';
+    }
+
+    let rows = [...state.transactions].sort((a, b) => b.date.localeCompare(a.date));
+    if (ledgerFilterAccount !== 'all') rows = rows.filter(t => t.account === ledgerFilterAccount);
+    if (ledgerFilterCategory !== 'all') rows = rows.filter(t => categorizeTx(t) === ledgerFilterCategory);
+
+    if (summary) summary.textContent = `${state.transactions.length} records`;
+
+    // Aggregates for the filtered set.
+    const agg = { Deposit: 0, Withdrawal: 0, Fee: 0, income: 0, Buy: 0, Sell: 0 };
+    rows.forEach(t => {
+      const c = categorizeTx(t);
+      if (c === 'Deposit') agg.Deposit += t.amount;
+      else if (c === 'Withdrawal') agg.Withdrawal += t.amount;
+      else if (c === 'Fee') agg.Fee += t.amount;
+      else if (c === 'Interest' || c === 'Dividend') agg.income += t.amount;
+      else if (c === 'Buy') agg.Buy += t.amount;
+      else if (c === 'Sell') agg.Sell += t.amount;
+    });
+    const bar = document.getElementById('ledgerSummaryBar');
+    if (bar) {
+      bar.innerHTML =
+        `<span><strong>${rows.length}</strong> shown</span>` +
+        `<span>Deposits <strong style="color:var(--good)">${formatGBP(agg.Deposit)}</strong></span>` +
+        `<span>Withdrawals <strong style="color:var(--bad)">${formatGBP(agg.Withdrawal)}</strong></span>` +
+        `<span>Fees <strong style="color:#ff9500">${formatGBP(agg.Fee)}</strong></span>` +
+        `<span>Income <strong style="color:#30b0c7">${formatGBP(agg.income)}</strong></span>` +
+        `<span>Buys <strong>${formatGBP(agg.Buy)}</strong></span>` +
+        `<span>Sells <strong>${formatGBP(agg.Sell)}</strong></span>`;
+    }
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);font-style:italic;">No transactions match this filter.</td></tr>`;
       return;
     }
-    
-    sorted.forEach(t => {
-      const tr = document.createElement('tr');
-      const formattedAmt = formatGBP(t.amount);
-      const formattedDate = new Date(t.date).toLocaleDateString('en-GB');
-      
-      let badgeColor = 'var(--muted)';
-      if (t.type === 'buy') badgeColor = 'var(--accent)';
-      else if (t.type === 'sell') badgeColor = '#d97706';
-      else if (t.type === 'inflow') badgeColor = 'var(--good)';
-      else if (t.type === 'outflow') badgeColor = 'var(--bad)';
-      
-      tr.innerHTML = `
-        <td style="font-variant-numeric: tabular-nums;">${formattedDate}</td>
-        <td>${ACCOUNTS[t.account]?.name || t.account}</td>
-        <td>
-          <span class="badge" style="background: ${badgeColor}15; color: ${badgeColor}; padding: 2px 8px; font-size: 11px;">
-            ${t.type.toUpperCase()}
-          </span>
-        </td>
-        <td><code>${t.ticker}</code></td>
-        <td style="text-align: right; font-variant-numeric: tabular-nums;">${t.units !== undefined ? t.units.toLocaleString() : '—'}</td>
-        <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: bold;">${formattedAmt}</td>
-        <td style="text-align: center;">
-          <button type="button" class="btn-delete-holding" onclick="deleteTransaction('${t.id}')" title="Delete record" style="width: 22px; height: 22px; font-size: 12px; margin: auto;">✕</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+
+    tbody.innerHTML = rows.map(t => {
+      const cat = categorizeTx(t);
+      const color = (CATEGORY_META[cat] || CATEGORY_META.Other).color;
+      const dateStr = new Date(t.date).toLocaleDateString('en-GB');
+      const tk = (t.ticker && t.ticker !== 'CASH') ? `<code>${t.ticker}</code>` : '—';
+      const units = (t.units !== undefined && t.units !== null) ? t.units.toLocaleString() : '—';
+      return `
+        <tr>
+          <td style="font-variant-numeric: tabular-nums;">${dateStr}</td>
+          <td>${ACCOUNTS[t.account] ? ACCOUNTS[t.account].name : t.account}</td>
+          <td><span class="badge" style="background:${color}1f;color:${color};padding:2px 8px;font-size:11px;white-space:nowrap;">${cat}</span></td>
+          <td>${tk}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">${units}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:bold;">${formatGBP(t.amount)}</td>
+          <td style="text-align:center;"><button type="button" class="btn-delete-holding" onclick="deleteTransaction('${t.id}')" title="Delete record" style="width:22px;height:22px;font-size:12px;margin:auto;">✕</button></td>
+        </tr>`;
+    }).join('');
   }
+
+  // --- Capital Gains Tax estimate (taxable accounts only) ---
+  let cgtRate = 0.24;          // higher-rate CGT on shares (post Oct 2024)
+  const CGT_ALLOWANCE = 3000;  // 2024/25 annual exempt amount
+
+  function computeCGT() {
+    const rows = [];
+    let totalGain = 0;
+    for (const acct in state.accounts) {
+      if (!ACCOUNTS[acct] || !ACCOUNTS[acct].taxable) continue;
+      state.accounts[acct].holdings.forEach(h => {
+        if (h.ticker === 'CASH' || h.transferredIn) return;
+        const mv = h.units * (h.pricePence / 100.0);
+        const gain = mv - h.cost;
+        rows.push({ acct, name: h.name, cost: h.cost, mv, gain });
+        totalGain += gain;
+      });
+    }
+    const taxable = Math.max(0, totalGain - CGT_ALLOWANCE);
+    return { rows, totalGain, allowance: CGT_ALLOWANCE, taxable, rate: cgtRate, cgt: taxable * cgtRate };
+  }
+
+  function renderCGT() {
+    const card = document.getElementById('cgtCard');
+    if (!card) return;
+    const r = computeCGT();
+    if (r.rows.length === 0) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    document.getElementById('cgtTableBody').innerHTML = r.rows.map(x => `
+      <tr>
+        <td>${x.name}</td>
+        <td>${ACCOUNTS[x.acct] ? ACCOUNTS[x.acct].name : x.acct}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatGBP(x.cost)}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatGBP(x.mv)}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:${x.gain >= 0 ? 'var(--good)' : 'var(--bad)'};">${x.gain >= 0 ? '+' : ''}${formatGBP(x.gain)}</td>
+      </tr>`).join('');
+
+    const tg = document.getElementById('cgtTotalGain');
+    tg.textContent = `${r.totalGain >= 0 ? '+' : ''}${formatGBP(r.totalGain)}`;
+    tg.style.color = r.totalGain >= 0 ? 'var(--good)' : 'var(--bad)';
+    document.getElementById('cgtAllowance').textContent = `−${formatGBP(r.allowance)}`;
+    document.getElementById('cgtTaxable').textContent = formatGBP(r.taxable);
+    document.getElementById('cgtEstimate').textContent = formatGBP(r.cgt);
+  }
+
+  window.setCgtRate = function (v) {
+    cgtRate = parseFloat(v);
+    renderCGT();
+  };
 
   window.deleteTransaction = function(id) {
     if (confirm("Are you sure you want to delete this transaction record?")) {
