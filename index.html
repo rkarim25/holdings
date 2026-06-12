@@ -230,21 +230,18 @@
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      background-image: none;
-      background-repeat: no-repeat;
-      background-position: right 10px center;
       padding-right: 6px;
     }
 
-    /* Hide the legacy Edge/IE native dropdown arrow */
+    /* Remove the native dropdown arrow across engines */
     select.holding-input::-ms-expand {
       display: none;
     }
 
-    select.holding-input:hover,
-    select.holding-input:focus {
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%2386868b' stroke-width='1.5'><path d='M1 1l4 4 4-4'/></svg>");
-      padding-right: 28px;
+    /* Keep the focus/open state clean — no dashed native outline */
+    select.holding-input:focus,
+    select.holding-input:focus-visible {
+      outline: none;
     }
 
     /* Badges & Color indicators */
