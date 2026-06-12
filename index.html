@@ -175,6 +175,23 @@
       background: rgba(0, 0, 0, 0.01);
     }
 
+    /* Keep column titles visible while scrolling through a table */
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #f4f4f6;
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+
+    .account-header-row td { cursor: pointer; }
+    .acct-collapse-arrow {
+      display: inline-block;
+      width: 14px;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
     .account-header-row {
       background: rgba(0, 113, 227, 0.04);
       border-bottom: 1px solid rgba(0, 113, 227, 0.12);
@@ -670,6 +687,7 @@
             <th style="text-align: right;">Cost</th>
             <th style="text-align: right;">Market Value</th>
             <th style="text-align: right;">Unrealised Gain</th>
+            <th style="text-align: right;">CGT</th>
           </tr>
         </thead>
         <tbody id="cgtTableBody"><!-- Rendered dynamically --></tbody>
@@ -1526,6 +1544,26 @@
     }
   };
 
+  // Which account sections are collapsed in the positions table.
+  const collapsedAccounts = new Set();
+
+  window.toggleAccountCollapse = function (acct) {
+    if (collapsedAccounts.has(acct)) collapsedAccounts.delete(acct);
+    else collapsedAccounts.add(acct);
+    applyAccountCollapse();
+  };
+
+  function applyAccountCollapse() {
+    for (const acct in ACCOUNTS) {
+      const collapsed = collapsedAccounts.has(acct);
+      document.querySelectorAll('.acct-rows-' + acct).forEach(el => {
+        el.style.display = collapsed ? 'none' : '';
+      });
+      const arrow = document.getElementById('acct-arrow-' + acct);
+      if (arrow) arrow.textContent = collapsed ? '▶' : '▼';
+    }
+  }
+
   function syncStateToDOM() {
     const tbody = document.getElementById('holdingsTableBody');
     if (!tbody) return;
@@ -1542,8 +1580,10 @@
       const headerTr = document.createElement('tr');
       headerTr.className = 'account-header-row';
       const wrapperBadgeText = ACCOUNTS[acct].taxable ? "Taxable GIA" : "Tax-Free";
+      const isCollapsed = collapsedAccounts.has(acct);
       headerTr.innerHTML = `
-        <colspan="9" style="font-weight: bold; font-size: 14px; padding: 10px 8px;">
+        <td colspan="9" style="font-weight: bold; font-size: 14px; padding: 10px 8px;" onclick="toggleAccountCollapse('${acct}')">
+          <span class="acct-collapse-arrow" id="acct-arrow-${acct}">${isCollapsed ? '▶' : '▼'}</span>
           📁 ${account.name} <span class="badge ${ACCOUNTS[acct].taxable ? 'badge-passive' : 'badge-active'}" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; font-weight: normal; vertical-align: middle;">${wrapperBadgeText}</span>
         </td>
         <td colspan="2" style="text-align: right; padding: 8px 10px;">
@@ -1573,6 +1613,7 @@
 
         const tr = document.createElement('tr');
         tr.id = `holding-row-${acct}-${index}`;
+        tr.className = `acct-rows-${acct}`;
         tr.innerHTML = `
           <td>
             <input type="text" class="holding-input" value="${h.name}" placeholder="Fund/Stock Name" onchange="updateHoldingField('${acct}', ${index}, 'name', this.value)" style="font-weight: 600;" />
@@ -1623,6 +1664,7 @@
 
       if (account.holdings.length === 0) {
         const emptyTr = document.createElement('tr');
+        emptyTr.className = `acct-rows-${acct}`;
         emptyTr.innerHTML = `
           <td colspan="11" style="text-align: center; color: var(--muted); font-style: italic; padding: 10px;">
             No positions in this account. Click "➕ Add Position" to add one.
@@ -1636,7 +1678,7 @@
       const accountGainPct = accountTotalCost > 0 ? (accountGain / accountTotalCost) * 100 : 0;
 
       const subtotalTr = document.createElement('tr');
-      subtotalTr.className = 'account-subtotal-row';
+      subtotalTr.className = `account-subtotal-row acct-rows-${acct}`;
       subtotalTr.id = `account-subtotal-${acct}`;
       subtotalTr.innerHTML = `
         <td colspan="4" style="text-align: right; font-weight: bold; color: var(--muted);">
@@ -1663,6 +1705,7 @@
 
     recomputeGrandTotals();
     renderCGT();
+    applyAccountCollapse();
   }
 
   async function fetchLivePrices() {
@@ -2975,14 +3018,18 @@
     if (r.rows.length === 0) { card.style.display = 'none'; return; }
     card.style.display = 'block';
 
-    document.getElementById('cgtTableBody').innerHTML = r.rows.map(x => `
+    document.getElementById('cgtTableBody').innerHTML = r.rows.map(x => {
+      const lineCgt = x.gain * r.rate; // per-holding CGT (gross, before the annual exemption)
+      return `
       <tr>
         <td>${x.name}</td>
         <td>${ACCOUNTS[x.acct] ? ACCOUNTS[x.acct].name : x.acct}</td>
         <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatGBP(x.cost)}</td>
         <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatGBP(x.mv)}</td>
         <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:${x.gain >= 0 ? 'var(--good)' : 'var(--bad)'};">${x.gain >= 0 ? '+' : ''}${formatGBP(x.gain)}</td>
-      </tr>`).join('');
+        <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:${lineCgt > 0 ? 'var(--bad)' : 'var(--muted)'};">${formatGBP(lineCgt)}</td>
+      </tr>`;
+    }).join('');
 
     const tg = document.getElementById('cgtTotalGain');
     tg.textContent = `${r.totalGain >= 0 ? '+' : ''}${formatGBP(r.totalGain)}`;
