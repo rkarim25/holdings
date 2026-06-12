@@ -694,7 +694,8 @@
   const ACCOUNTS = {
     sipp: { name: "Reza HL SIPP", taxable: false },
     sisa: { name: "Reza ISA", taxable: false },
-    jisa1: { name: "Liyana JISA", taxable: false }
+    jisa1: { name: "Liyana JISA", taxable: false },
+    saba: { name: "Saba Investment Account", taxable: true }
   };
 
   // Default accounts structure pre-populated with SIPP holdings from your HL screenshot
@@ -728,6 +729,15 @@
         { name: "VanEck Gold Miners UCITS ETF", ticker: "GDGB.L", units: 620, pricePence: 6522.0, cost: 54572.67, sleeve: "gold", entryDate: "2026-01-23" },
         { name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 1432, pricePence: 1603.20, cost: 8994.09, sleeve: "ndx", entryDate: "2024-05-23" },
         { name: "Cash (HL Account Balance)", ticker: "CASH", units: 9073.16, pricePence: 100.0, cost: 9073.16, sleeve: "cash" }
+      ]
+    },
+    saba: {
+      name: "Saba Investment Account",
+      holdings: [
+        { name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 2062, pricePence: 1636.40, cost: 12841.61, sleeve: "ndx" },
+        { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 722, pricePence: 25384.00, cost: 111111.83, sleeve: "spx" },
+        { name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", ticker: "TG61", units: 0.13, pricePence: 23.46, cost: 0.04, sleeve: "other" },
+        { name: "Cash (HL Account Balance)", ticker: "CASH", units: 139292.03, pricePence: 100.0, cost: 139292.03, sleeve: "cash" }
       ]
     }
   };
@@ -1554,7 +1564,7 @@
   let performanceChart = null;
   let chartMode = 'value'; // 'value' or 'percent'
   let chartRange = '1y'; // '3m', '6m', '1y', 'all'
-  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1'];
+  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba'];
   let displayStartDate = null;
   let displayEndDate = null;
 
