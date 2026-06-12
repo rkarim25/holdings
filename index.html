@@ -618,51 +618,6 @@
     </div>
   </section>
 
-  <!-- PERFORMANCE CHART CARD -->
-  <section class="card" id="chartCard" style="display: none; margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
-      <h3 style="font-size: 20px; font-weight: 700; color: var(--text);">Equity Performance</h3>
-      
-      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <!-- Account Selectors -->
-        <div id="chartAccountSelectors" style="display: flex; gap: 10px; align-items: center; font-size: 13px;">
-          <!-- Rendered dynamically -->
-        </div>
-        
-        <!-- Toggle Mode -->
-        <div style="display: flex; background: rgba(0, 0, 0, 0.05); padding: 2px; border-radius: 8px; border: 1px solid var(--line);">
-          <button type="button" id="btnChartModeVal" class="tab-btn active" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; font-weight: 600; border: none; box-shadow: none;">£ Value</button>
-          <button type="button" id="btnChartModePct" class="tab-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; font-weight: 600; border: none; box-shadow: none;">% Return</button>
-        </div>
-
-        <!-- Date Ranges -->
-        <div style="display: flex; gap: 4px; background: rgba(0, 0, 0, 0.02); padding: 2px; border-radius: 8px;">
-          <button type="button" class="tab-btn chart-range-btn" data-range="1w" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1W</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="1m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1M</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="3m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">3M</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="6m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">6M</button>
-          <button type="button" class="tab-btn chart-range-btn active" data-range="1y" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1Y</button>
-          <button type="button" class="tab-btn chart-range-btn" data-range="all" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">ALL</button>
-        </div>
-
-        <!-- Custom Dates -->
-        <div style="display: flex; gap: 6px; align-items: center; background: rgba(0, 0, 0, 0.02); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--line); flex-wrap: wrap;">
-          <span class="small" style="font-size: 11px; font-weight: 600; color: var(--muted);">Custom:</span>
-          <input type="date" id="chartStartDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
-          <span style="font-size: 11px; color: var(--muted);">to</span>
-          <input type="date" id="chartEndDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
-          <button type="button" id="btnResetZoom" onclick="resetChartZoom()" class="tab-btn" style="padding: 2px 8px; font-size: 11px; font-weight: 600; border: none; box-shadow: none; border-radius: 6px; background: rgba(0,0,0,0.05); display: none;">Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chart Canvas -->
-    <div id="chartCanvasWrap" style="position: relative; height: 320px; width: 100%; user-select: none;">
-      <canvas id="equityPerformanceChart" style="touch-action: none; cursor: grab; display: block;"></canvas>
-    </div>
-  </section>
-
-  <!-- TRANSACTION LEDGER CARD -->
   <!-- CAPITAL GAINS TAX CARD (taxable accounts) -->
   <section class="card" id="cgtCard" style="display: none; margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px;">
@@ -714,6 +669,52 @@
       </div>
     </div>
   </section>
+
+  <!-- PERFORMANCE CHART CARD -->
+  <section class="card" id="chartCard" style="display: none; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+      <h3 style="font-size: 20px; font-weight: 700; color: var(--text);">Equity Performance</h3>
+      
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <!-- Account Selectors -->
+        <div id="chartAccountSelectors" style="display: flex; gap: 10px; align-items: center; font-size: 13px;">
+          <!-- Rendered dynamically -->
+        </div>
+        
+        <!-- Toggle Mode -->
+        <div style="display: flex; background: rgba(0, 0, 0, 0.05); padding: 2px; border-radius: 8px; border: 1px solid var(--line);">
+          <button type="button" id="btnChartModeVal" class="tab-btn active" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; font-weight: 600; border: none; box-shadow: none;">£ Value</button>
+          <button type="button" id="btnChartModePct" class="tab-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; font-weight: 600; border: none; box-shadow: none;">% Return</button>
+        </div>
+
+        <!-- Date Ranges -->
+        <div style="display: flex; gap: 4px; background: rgba(0, 0, 0, 0.02); padding: 2px; border-radius: 8px;">
+          <button type="button" class="tab-btn chart-range-btn" data-range="1w" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1W</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="1m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1M</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="3m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">3M</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="6m" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">6M</button>
+          <button type="button" class="tab-btn chart-range-btn active" data-range="1y" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">1Y</button>
+          <button type="button" class="tab-btn chart-range-btn" data-range="all" onclick="setChartRange(this)" style="padding: 4px 8px; font-size: 11px; font-weight: 500; border: none; box-shadow: none;">ALL</button>
+        </div>
+
+        <!-- Custom Dates -->
+        <div style="display: flex; gap: 6px; align-items: center; background: rgba(0, 0, 0, 0.02); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--line); flex-wrap: wrap;">
+          <span class="small" style="font-size: 11px; font-weight: 600; color: var(--muted);">Custom:</span>
+          <input type="date" id="chartStartDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
+          <span style="font-size: 11px; color: var(--muted);">to</span>
+          <input type="date" id="chartEndDate" class="holding-input" onchange="setChartCustomRange()" style="padding: 2px 4px; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; width: 115px; background: white;" />
+          <button type="button" id="btnResetZoom" onclick="resetChartZoom()" class="tab-btn" style="padding: 2px 8px; font-size: 11px; font-weight: 600; border: none; box-shadow: none; border-radius: 6px; background: rgba(0,0,0,0.05); display: none;">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Canvas -->
+    <div id="chartCanvasWrap" style="position: relative; height: 320px; width: 100%; user-select: none;">
+      <canvas id="equityPerformanceChart" style="touch-action: none; cursor: grab; display: block;"></canvas>
+    </div>
+  </section>
+
+  <!-- TRANSACTION LEDGER CARD -->
 
   <section class="card" id="ledgerCard" style="display: none; margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid var(--line); padding-bottom: 12px;" onclick="toggleLedgerSection()">
