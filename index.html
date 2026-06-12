@@ -192,6 +192,43 @@
       color: var(--accent);
     }
 
+    /* Chart account selector chips + presets */
+    .chart-preset-btn {
+      padding: 3px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .chart-preset-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+    .chart-acct-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .chart-acct-chip:hover { border-color: var(--muted); }
+    .chart-acct-chip:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .chart-acct-chip input { accent-color: var(--accent); cursor: pointer; margin: 0; }
+
     /* In-header column filters for the transaction log */
     .ledger-col-filter {
       display: block;
@@ -314,13 +351,24 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--text);
       cursor: pointer;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .total-account-filter label:hover { border-color: var(--muted); }
+    .total-account-filter label:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-soft);
     }
     .total-account-filter input {
       cursor: pointer;
       accent-color: var(--accent);
+      margin: 0;
     }
 
     /* Badges & Color indicators */
@@ -641,7 +689,7 @@
       
       <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <!-- Account Selectors -->
-        <div id="chartAccountSelectors" style="display: flex; gap: 10px; align-items: center; font-size: 13px;">
+        <div id="chartAccountSelectors" style="display: flex; gap: 7px; align-items: center; font-size: 13px; flex-wrap: wrap;">
           <!-- Rendered dynamically -->
         </div>
         
@@ -851,8 +899,8 @@
     saba_isa: { name: "Saba ISA (5669918)", taxable: false, usable: true },
     nameer_isa: { name: "Nameer JISA (5709736)", taxable: false },
     saba_sipp: { name: "Saba SIPP (5758430)", taxable: false },
-    reza_lisa: { name: "Reza LISA", taxable: false },
-    saba_lisa: { name: "Saba LISA", taxable: false }
+    reza_lisa: { name: "Reza LISA", taxable: false, usable: true },
+    saba_lisa: { name: "Saba LISA", taxable: false, usable: true }
   };
 
   // Default accounts structure pre-populated with SIPP holdings from your HL screenshot
@@ -2556,18 +2604,23 @@
   function initChartSelectors() {
     const container = document.getElementById('chartAccountSelectors');
     if (!container) return;
-    container.innerHTML = '';
-    
+    let html = `<span class="small" style="color: var(--muted); font-weight: 600;">Show</span>`
+      + `<button type="button" class="chart-preset-btn" onclick="setChartPreset('all')">All</button>`
+      + `<button type="button" class="chart-preset-btn" onclick="setChartPreset('usable')" title="Adult ISAs, LISAs + investment accounts only">Usable cash</button>`;
     for (const acct in ACCOUNTS) {
       const isChecked = selectedChartAccounts.includes(acct) ? 'checked' : '';
-      container.innerHTML += `
-        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-          <input type="checkbox" value="${acct}" ${isChecked} onchange="handleChartAccountChange(this)" />
-          ${ACCOUNTS[acct].name}
-        </label>
-      `;
+      html += `<label class="chart-acct-chip"><input type="checkbox" value="${acct}" ${isChecked} onchange="handleChartAccountChange(this)" /> ${ACCOUNTS[acct].name}</label>`;
     }
+    container.innerHTML = html;
   }
+
+  window.setChartPreset = function (which) {
+    selectedChartAccounts = (which === 'usable')
+      ? Object.keys(ACCOUNTS).filter(id => ACCOUNTS[id].usable)
+      : Object.keys(ACCOUNTS);
+    initChartSelectors();
+    updateChart();
+  };
 
   window.handleChartAccountChange = function(checkbox) {
     const acct = checkbox.value;
