@@ -1522,7 +1522,7 @@
     statusEl.textContent = 'Fetching latest prices...';
 
     try {
-      const url = `../holdings_prices.json?v=${Date.now()}`;
+      const url = `https://rkarim25.github.io/Strategy/holdings_prices.json?v=${Date.now()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
@@ -1645,7 +1645,7 @@
 
   async function fetchHistoricalPrices() {
     try {
-      const url = `../holdings_historical_prices.json?v=${Date.now()}`;
+      const url = `https://rkarim25.github.io/Strategy/holdings_historical_prices.json?v=${Date.now()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       historicalPriceDb = await res.json();
