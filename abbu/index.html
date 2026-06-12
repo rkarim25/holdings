@@ -524,7 +524,7 @@
   <header>
     <div>
       <h1>Portfolio Holdings Tracker</h1>
-      <p class="subtitle">Abbu Investment Account (HL Trading).</p>
+      <p class="subtitle">Abbu Investment Account (5669896) (HL Trading).</p>
       <nav class="account-tabs" aria-label="Account view">
         <a href="../" class="account-tab">Family</a>
         <a href="./" class="account-tab active" aria-current="page">Abbu</a>
@@ -682,7 +682,7 @@
         <div style="flex: 1; min-width: 120px;">
           <label class="small" style="font-weight: 600; display: block; margin-bottom: 4px;">Account</label>
           <select id="selTxAccount" class="holding-input" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 6px; padding-right: 20px;">
-            <option value="abbu">Abbu Investment Account</option>
+            <option value="abbu">Abbu Investment Account (5669896)</option>
           </select>
         </div>
         <div style="flex: 1; min-width: 120px;">
@@ -752,13 +752,13 @@
   };
 
   const ACCOUNTS = {
-    abbu: { name: "Abbu Investment Account", taxable: true }
+    abbu: { name: "Abbu Investment Account (5669896)", taxable: true }
   };
 
   // Default accounts structure pre-populated with SIPP holdings from your HL screenshot
   const DEFAULT_ACCOUNTS = {
     abbu: {
-      name: "Abbu Investment Account",
+      name: "Abbu Investment Account (5669896)",
       holdings: [
         { name: "iShares Core EURO STOXX 50 UCITS ETF", ticker: "EUE", units: 399, pricePence: 5442.00, cost: 18396.37, sleeve: "other" },
         { name: "iShares S&P 500 Communication Sector UCITS ETF", ticker: "IUCM", units: 814, pricePence: 1047.75, cost: 8409.69, sleeve: "spx" },
@@ -1619,7 +1619,7 @@
 
   // --- CHARTING & LEDGER CODE ---
   const DEFAULT_TRANSACTIONS = [
-    // Abbu Investment Account (HL Trading)
+    // Abbu Investment Account (5669896) (HL Trading)
     { id: "a1", date: "2025-01-01", account: "abbu", type: "inflow", ticker: "CASH", amount: 117430.54, description: "Initial Funding" },
     { id: "a2", date: "2025-01-01", account: "abbu", type: "buy", ticker: "EUE", name: "iShares Core EURO STOXX 50 UCITS ETF", units: 399, amount: 18396.37, sleeve: "other" },
     { id: "a3", date: "2025-01-01", account: "abbu", type: "buy", ticker: "IUCM", name: "iShares S&P 500 Communication Sector UCITS ETF", units: 814, amount: 8409.69, sleeve: "spx" },
@@ -1673,10 +1673,84 @@
     }
   }
 
+  const ACCOUNT_LEDGERS = {
+    abbu: [
+      { id: "ab-bal", date: "2022-06-12", type: "inflow", ticker: "CASH", amount: 265.19, description: "Opening balance / adjustment" },
+      { id: "ab-x-IB01", date: "2022-06-12", type: "buy", ticker: "IB01", name: "iShares $ Treasury Bond 0-1yr UCITS ETF", units: 402.0, amount: 0, sleeve: "other", description: "Transfer in (in-specie) iShares $ Treasury Bond 0-1yr UCITS ETF" },
+      { id: "ab-x-IUCM", date: "2022-06-12", type: "buy", ticker: "IUCM", name: "iShares S&P 500 Communication Sector UCITS ETF", units: 814, amount: 0, sleeve: "spx", description: "Transfer in (in-specie) iShares S&P 500 Communication Sector UCITS ETF" },
+      { id: "ab-x-MOAT", date: "2022-06-12", type: "buy", ticker: "MOAT", name: "VanEck Morningstar US Sustainable Wide Moat", units: 1014.0, amount: 0, sleeve: "spx", description: "Transfer in (in-specie) VanEck Morningstar US Sustainable Wide Moat" },
+      { id: "ab-x-XS2DL", date: "2022-06-12", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 151.0, amount: 0, sleeve: "spx", description: "Transfer in (in-specie) Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "ab1", date: "2023-05-11", type: "inflow", ticker: "CASH", amount: 53.8, description: "Trf from IG Group" },
+      { id: "ab2", date: "2023-05-11", type: "inflow", ticker: "CASH", amount: 17000.0, description: "Debit card payment" },
+      { id: "ab3", date: "2023-05-16", type: "inflow", ticker: "CASH", amount: 8000.0, description: "Debit card payment" },
+      { id: "ab4", date: "2023-05-22", type: "outflow", ticker: "CASH", amount: 25000.0, description: "25688.63 HM TREA0.12524  Del     .97 S Date 24/05/23" },
+      { id: "ab5", date: "2023-05-26", type: "inflow", ticker: "CASH", amount: 9.13, description: "GROSS INTEREST" },
+      { id: "ab6", date: "2023-06-27", type: "inflow", ticker: "CASH", amount: 0.06, description: "GROSS INTEREST" },
+      { id: "ab7", date: "2023-07-26", type: "inflow", ticker: "CASH", amount: 0.08, description: "GROSS INTEREST" },
+      { id: "ab8", date: "2023-07-31", type: "inflow", ticker: "CASH", amount: 16.05, description: "Dividend: Div 25688.63 UNITED KINGDOM(GOVERNMENT O" },
+      { id: "ab9", date: "2023-08-29", type: "inflow", ticker: "CASH", amount: 0.1, description: "GROSS INTEREST" },
+      { id: "ab10", date: "2023-09-26", type: "inflow", ticker: "CASH", amount: 0.11, description: "GROSS INTEREST" },
+      { id: "ab11", date: "2023-10-26", type: "inflow", ticker: "CASH", amount: 0.11, description: "GROSS INTEREST" },
+      { id: "ab12", date: "2023-11-03", type: "buy", ticker: "LUK2", name: "L&G ETF (LUK2)", units: 107.0, amount: 35109.37, sleeve: "other", description: "Buy L&G ETF (LUK2)" },
+      { id: "ab13", date: "2023-11-03", type: "sell", ticker: "IB01", name: "iShares $ Treasury Bond 0-1yr UCITS ETF", units: 402.0, amount: 34855.97, sleeve: "other", description: "Sell iShares $ Treasury Bond 0-1yr UCITS ETF" },
+      { id: "ab14", date: "2023-11-08", type: "inflow", ticker: "CASH", amount: 248.69, description: "309.98 U.S. DOLLARS NoTf     .80 S Date 10/11/23" },
+      { id: "ab15", date: "2023-11-29", type: "inflow", ticker: "CASH", amount: 0.1, description: "GROSS INTEREST" },
+      { id: "ab16", date: "2023-12-28", type: "inflow", ticker: "CASH", amount: 0.11, description: "GROSS INTEREST" },
+      { id: "ab17", date: "2024-01-05", type: "sell", ticker: "LUK2", name: "L&G ETF (LUK2)", units: 107.0, amount: 36973.89, sleeve: "other", description: "Sell L&G ETF (LUK2)" },
+      { id: "ab18", date: "2024-01-09", type: "outflow", ticker: "CASH", amount: 1411.0, description: "INTERNAL TRANSFER /5669896/5" },
+      { id: "ab19", date: "2024-01-09", type: "outflow", ticker: "CASH", amount: 6588.5, description: "2023/24 ISA Subscription re 5709736" },
+      { id: "ab20", date: "2024-01-10", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 227.0, amount: 29006.3, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "ab21", date: "2024-01-26", type: "inflow", ticker: "CASH", amount: 5.82, description: "GROSS INTEREST" },
+      { id: "ab22", date: "2024-01-31", type: "inflow", ticker: "CASH", amount: 25688.63, description: "HM TREA0.12524      Mandatory Redemption" },
+      { id: "ab23", date: "2024-01-31", type: "inflow", ticker: "CASH", amount: 16.05, description: "Dividend: Div 25688.63 UNITED KINGDOM(GOVERNMENT O" },
+      { id: "ab24", date: "2024-02-06", type: "outflow", ticker: "CASH", amount: 25753.53, description: "25753.53 POUNDS STERLING NoTf    1.23 S Date 08/02/24" },
+      { id: "ab25", date: "2024-02-09", type: "outflow", ticker: "CASH", amount: 3.66, description: "4.54 U.S. DOLLARS          .80 S Date 13/02/24" },
+      { id: "ab26", date: "2024-02-09", type: "outflow", ticker: "CASH", amount: 240.68, description: "240.68 POUNDS STERLING NoTf    1.24 S Date 13/02/24" },
+      { id: "ab27", date: "2024-02-09", type: "inflow", ticker: "CASH", amount: 500.0, description: "Debit card payment" },
+      { id: "ab28", date: "2024-02-27", type: "inflow", ticker: "CASH", amount: 13.99, description: "GROSS INTEREST" },
+      { id: "ab29", date: "2024-03-26", type: "inflow", ticker: "CASH", amount: 0.43, description: "GROSS INTEREST" },
+      { id: "ab30", date: "2024-04-15", type: "sell", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 414.0, amount: 61011.37, sleeve: "spx", description: "Sell Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "ab31", date: "2024-04-23", type: "buy", ticker: "XS2D.L", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", units: 426.0, amount: 61200.14, sleeve: "spx", description: "Buy Xtrackers S&P 500 2x Leveraged Daily UCITS ETF" },
+      { id: "ab32", date: "2024-04-26", type: "inflow", ticker: "CASH", amount: 35.63, description: "GROSS INTEREST" },
+      { id: "ab33", date: "2024-05-28", type: "inflow", ticker: "CASH", amount: 0.19, description: "GROSS INTEREST" },
+      { id: "ab34", date: "2024-06-11", type: "outflow", ticker: "CASH", amount: 19.99, description: "Fee Transfer" },
+      { id: "ab35", date: "2024-06-26", type: "inflow", ticker: "CASH", amount: 0.18, description: "GROSS INTEREST" },
+      { id: "ab36", date: "2024-07-08", type: "inflow", ticker: "CASH", amount: 4.74, description: "90 WISE MULTETN62  Del     .05 S Date 10/07/24" },
+      { id: "ab37", date: "2024-07-10", type: "outflow", ticker: "CASH", amount: 1.71, description: "Fee Transfer" },
+      { id: "ab38", date: "2024-07-26", type: "inflow", ticker: "CASH", amount: 0.16, description: "GROSS INTEREST" },
+      { id: "ab39", date: "2024-08-12", type: "outflow", ticker: "CASH", amount: 29.98, description: "Fee Transfer" },
+      { id: "ab40", date: "2024-08-28", type: "inflow", ticker: "CASH", amount: 0.15, description: "GROSS INTEREST" },
+      { id: "ab41", date: "2024-09-10", type: "outflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
+      { id: "ab42", date: "2024-09-26", type: "inflow", ticker: "CASH", amount: 0.09, description: "GROSS INTEREST" },
+      { id: "ab43", date: "2024-10-10", type: "outflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
+      { id: "ab44", date: "2024-10-28", type: "inflow", ticker: "CASH", amount: 0.04, description: "GROSS INTEREST" },
+      { id: "ab45", date: "2024-11-26", type: "inflow", ticker: "CASH", amount: 0.02, description: "GROSS INTEREST" },
+      { id: "ab46", date: "2024-12-30", type: "inflow", ticker: "CASH", amount: 0.01, description: "GROSS INTEREST" },
+      { id: "ab47", date: "2025-01-10", type: "outflow", ticker: "CASH", amount: 10.86, description: "Fee Transfer" },
+      { id: "ab48", date: "2025-01-28", type: "inflow", ticker: "CASH", amount: 0.01, description: "GROSS INTEREST" },
+      { id: "ab49", date: "2025-02-11", type: "outflow", ticker: "CASH", amount: 0.01, description: "Fee Transfer" },
+      { id: "ab50", date: "2025-02-27", type: "sell", ticker: "MOAT", name: "VanEck Morningstar US Sustainable Wide Moat", units: 151.0, amount: 7013.64, sleeve: "spx", description: "Sell VanEck Morningstar US Sustainable Wide Moat" },
+      { id: "ab51", date: "2025-03-03", type: "outflow", ticker: "CASH", amount: 5000.0, description: "PAYMENT Q56698962852MS S KHAN" },
+      { id: "ab52", date: "2025-03-11", type: "outflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
+      { id: "ab53", date: "2025-03-27", type: "inflow", ticker: "CASH", amount: 1.5, description: "GROSS INTEREST" },
+      { id: "ab54", date: "2025-04-10", type: "outflow", ticker: "CASH", amount: 29.99, description: "Fee Transfer" },
+      { id: "ab55", date: "2025-04-25", type: "inflow", ticker: "CASH", amount: 16465.0, description: "Debit card payment" },
+      { id: "ab56", date: "2025-04-28", type: "inflow", ticker: "CASH", amount: 2.09, description: "GROSS INTEREST" },
+      { id: "ab57", date: "2025-05-02", type: "buy", ticker: "EUE", name: "iShares Core EURO STOXX 50 UCITS ETF", units: 399.0, amount: 18396.37, sleeve: "other", description: "Buy iShares Core EURO STOXX 50 UCITS ETF" },
+      { id: "ab58", date: "2025-05-12", type: "outflow", ticker: "CASH", amount: 25.88, description: "Fee Transfer" },
+      { id: "ab59", date: "2025-05-28", type: "inflow", ticker: "CASH", amount: 7.23, description: "GROSS INTEREST" },
+      { id: "ab60", date: "2025-06-10", type: "outflow", ticker: "CASH", amount: 7.23, description: "Fee Transfer" },
+    ]
+  };
+
   function initializeTransactionsFromHoldings() {
     const txs = [];
     let idCounter = 1;
     for (const acct in state.accounts) {
+      if (ACCOUNT_LEDGERS[acct]) {
+        ACCOUNT_LEDGERS[acct].forEach(t => txs.push(Object.assign({ account: acct }, t)));
+        continue;
+      }
       state.accounts[acct].holdings.forEach(h => {
         const date = h.entryDate || "2025-01-01";
         if (h.ticker === 'CASH') {

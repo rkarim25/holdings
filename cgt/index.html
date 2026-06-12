@@ -498,7 +498,7 @@
   <header>
     <div>
       <h1>Capital Gains Tax</h1>
-      <p class="subtitle">Estimated CGT across taxable (GIA) accounts — Saba Investment Account &amp; Abbu Investment Account.</p>
+      <p class="subtitle">Estimated CGT across taxable (GIA) accounts — Saba Investment Account (5669793) &amp; Abbu Investment Account (5669896).</p>
       <nav class="account-tabs" aria-label="Account view">
         <a href="../" class="account-tab">Family</a>
         <a href="../abbu/" class="account-tab">Abbu</a>
@@ -563,11 +563,9 @@
   // CGT-eligible holdings in the taxable accounts (keep in sync with the
   // family Saba account and the Abbu page).
   const TAXABLE_HOLDINGS = [
-    { account: "Saba Investment Account", name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 2062, cost: 12841.61, pricePence: 1636.40 },
-    { account: "Abbu Investment Account", name: "iShares Core EURO STOXX 50 UCITS ETF",        ticker: "EUE",    units: 399,  cost: 18396.37, pricePence: 5442.00 },
-    { account: "Abbu Investment Account", name: "iShares S&P 500 Communication Sector UCITS ETF", ticker: "IUCM", units: 814,  cost: 8409.69,  pricePence: 1047.75 },
-    { account: "Abbu Investment Account", name: "VanEck Morningstar US Sustainable Wide Moat",  ticker: "MOAT",   units: 863,  cost: 34330.99, pricePence: 4623.40 },
-    { account: "Abbu Investment Account", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 390, cost: 56028.30, pricePence: 25379.00 }
+    { account: "Saba Investment Account (5669793)", name: "iShares MSCI Global Semiconductor UCITS ETF", ticker: "SEMI.L", units: 2062, cost: 12841.61, pricePence: 1636.40 },
+    { account: "Abbu Investment Account (5669896)", name: "iShares Core EURO STOXX 50 UCITS ETF",        ticker: "EUE",    units: 399,  cost: 18396.37, pricePence: 5442.00 },
+    { account: "Abbu Investment Account (5669896)", name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 390, cost: 56028.30, pricePence: 25379.00 }
   ];
 
   const gbp = v => new Intl.NumberFormat('en-GB', { style:'currency', currency:'GBP', maximumFractionDigits:2 }).format(v);
