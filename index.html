@@ -754,7 +754,10 @@
     sipp: { name: "Reza HL SIPP", taxable: false },
     sisa: { name: "Reza ISA", taxable: false },
     jisa1: { name: "Liyana JISA", taxable: false },
-    saba: { name: "Saba Investment Account", taxable: true }
+    saba: { name: "Saba Investment Account", taxable: true },
+    saba_isa: { name: "Saba ISA", taxable: false },
+    nameer_isa: { name: "Nameer ISA", taxable: false },
+    saba_sipp: { name: "Saba SIPP", taxable: false }
   };
 
   // Default accounts structure pre-populated with SIPP holdings from your HL screenshot
@@ -797,6 +800,27 @@
         { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 722, pricePence: 25384.00, cost: 111111.83, sleeve: "spx" },
         { name: "UNITED KINGDOM 0.5% 22/10/2061 (Gilt)", ticker: "TG61", units: 0.13, pricePence: 23.46, cost: 0.04, sleeve: "other" },
         { name: "Cash (HL Account Balance)", ticker: "CASH", units: 139292.03, pricePence: 100.0, cost: 139292.03, sleeve: "cash" }
+      ]
+    },
+    saba_isa: {
+      name: "Saba ISA",
+      holdings: [
+        { name: "VanEck Gold Miners UCITS ETF", ticker: "GDGB.L", units: 1680, pricePence: 6717.00, cost: 147738.88, sleeve: "gold" },
+        { name: "Cash (HL Account Balance)", ticker: "CASH", units: 16287.31, pricePence: 100.0, cost: 16287.31, sleeve: "cash" }
+      ]
+    },
+    nameer_isa: {
+      name: "Nameer ISA",
+      holdings: [
+        { name: "VanEck Gold Miners UCITS ETF", ticker: "GDGB.L", units: 603, pricePence: 6717.00, cost: 53102.95, sleeve: "gold" },
+        { name: "Cash (HL Account Balance)", ticker: "CASH", units: 9076.22, pricePence: 100.0, cost: 9076.22, sleeve: "cash" }
+      ]
+    },
+    saba_sipp: {
+      name: "Saba SIPP",
+      holdings: [
+        { name: "Xtrackers S&P 500 2x Leveraged Daily UCITS ETF", ticker: "XS2D.L", units: 16, pricePence: 25639.00, cost: 2483.20, sleeve: "spx" },
+        { name: "Cash (HL Account Balance)", ticker: "CASH", units: 3043.84, pricePence: 100.0, cost: 3043.84, sleeve: "cash" }
       ]
     }
   };
@@ -1680,7 +1704,7 @@
   let performanceChart = null;
   let chartMode = 'value'; // 'value' or 'percent'
   let chartRange = '1y'; // '3m', '6m', '1y', 'all'
-  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba'];
+  let selectedChartAccounts = ['sipp', 'sisa', 'jisa1', 'saba', 'saba_isa', 'nameer_isa', 'saba_sipp'];
   let displayStartDate = null;
   let displayEndDate = null;
 
