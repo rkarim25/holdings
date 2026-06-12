@@ -271,6 +271,26 @@
       border-color: var(--accent);
     }
 
+    /* "Include in totals" account checkboxes */
+    .total-account-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+    }
+    .total-account-filter label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .total-account-filter input {
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
     /* Badges & Color indicators */
     .badge {
       display: inline-block;
@@ -549,7 +569,13 @@
     </div>
 
     <!-- Actions & Totals -->
-    <div class="utility-row" style="justify-content: flex-end;">
+    <div class="utility-row" style="justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div class="total-item-lbl" style="margin-bottom: 6px;">Include in totals</div>
+        <div id="totalAccountFilter" class="total-account-filter">
+          <!-- account checkboxes populated by renderTotalAccountFilter() -->
+        </div>
+      </div>
       <div class="totals-board">
         <div>
           <div class="total-item-lbl">Grand Total Cost</div>
@@ -562,6 +588,10 @@
         <div>
           <div class="total-item-lbl">Grand Unrealised G/L</div>
           <div id="lblAccountTotalGain" class="total-item-val font-weight-bold">£0 (0.0%)</div>
+        </div>
+        <div>
+          <div class="total-item-lbl">Annualised Return</div>
+          <div id="lblAccountTotalAnn" class="total-item-val font-weight-bold">—</div>
         </div>
       </div>
     </div>
@@ -1245,21 +1275,11 @@
       gainCell.style.color = accountGain >= 0 ? 'var(--good)' : 'var(--bad)';
     }
 
-    // Calculate Grand Portfolio Totals
-    let grandTotalCost = 0;
-    let grandTotalVal = 0;
-
-    for (const a in state.accounts) {
-      state.accounts[a].holdings.forEach(h => {
-        grandTotalCost += h.cost;
-        grandTotalVal += h.units * (h.pricePence / 100.0);
-      });
-    }
-
-    updateGrandTotalsDOM(grandTotalCost, grandTotalVal);
+    // Recompute grand totals (respects the account include-filter)
+    recomputeGrandTotals();
   }
 
-  function updateGrandTotalsDOM(grandTotalCost, grandTotalVal) {
+  function updateGrandTotalsDOM(grandTotalCost, grandTotalVal, annualised) {
     const grandTotalGain = grandTotalVal - grandTotalCost;
     const grandTotalGainPct = grandTotalCost > 0 ? (grandTotalGain / grandTotalCost) * 100 : 0;
 
@@ -1269,6 +1289,73 @@
     const gainEl = document.getElementById('lblAccountTotalGain');
     gainEl.textContent = `${grandTotalGain >= 0 ? '+' : ''}${formatGBP(grandTotalGain)} (${grandTotalGainPct.toFixed(1)}%)`;
     gainEl.className = `total-item-val ${grandTotalGain >= 0 ? 'good' : 'bad'}`;
+
+    const annEl = document.getElementById('lblAccountTotalAnn');
+    if (annEl) {
+      if (annualised === null || annualised === undefined || isNaN(annualised)) {
+        annEl.textContent = '—';
+        annEl.className = 'total-item-val';
+      } else {
+        annEl.textContent = `${annualised >= 0 ? '+' : ''}${annualised.toFixed(1)}% p.a.`;
+        annEl.className = `total-item-val ${annualised >= 0 ? 'good' : 'bad'}`;
+      }
+    }
+  }
+
+  // Which accounts are included in the grand totals (default: all).
+  let selectedTotalAccounts = null;
+
+  // Sum cost/value over the selected accounts and derive a cost-weighted
+  // annualised return (CAGR) for the portfolio.
+  function recomputeGrandTotals() {
+    if (!selectedTotalAccounts) selectedTotalAccounts = new Set(Object.keys(ACCOUNTS));
+    let cost = 0, val = 0, weightedDays = 0, weightBase = 0;
+    const today = new Date();
+    const d2 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    for (const acct in state.accounts) {
+      if (!selectedTotalAccounts.has(acct)) continue;
+      state.accounts[acct].holdings.forEach(h => {
+        const v = h.units * (h.pricePence / 100.0);
+        cost += h.cost;
+        val += v;
+        // Cost-weighted holding period (cash excluded — it has no return).
+        if (h.ticker !== 'CASH' && h.cost > 0) {
+          const entry = new Date(h.entryDate || '2025-01-01');
+          if (!isNaN(entry.getTime())) {
+            const d1 = new Date(entry.getFullYear(), entry.getMonth(), entry.getDate());
+            let days = (d2 - d1) / 86400000;
+            if (days < 1) days = 1;
+            weightedDays += h.cost * days;
+            weightBase += h.cost;
+          }
+        }
+      });
+    }
+    let annualised = null;
+    if (cost > 0 && val > 0 && weightBase > 0) {
+      const avgDays = weightedDays / weightBase;
+      annualised = (Math.pow(val / cost, 365.25 / avgDays) - 1) * 100;
+    }
+    updateGrandTotalsDOM(cost, val, annualised);
+  }
+
+  // Render the "Include in totals" account checkboxes.
+  function renderTotalAccountFilter() {
+    const container = document.getElementById('totalAccountFilter');
+    if (!container) return;
+    if (!selectedTotalAccounts) selectedTotalAccounts = new Set(Object.keys(ACCOUNTS));
+    container.innerHTML = '';
+    for (const id in ACCOUNTS) {
+      const label = document.createElement('label');
+      const checked = selectedTotalAccounts.has(id) ? 'checked' : '';
+      label.innerHTML = `<input type="checkbox" value="${id}" ${checked}/> ${ACCOUNTS[id].name}`;
+      label.querySelector('input').addEventListener('change', (e) => {
+        if (e.target.checked) selectedTotalAccounts.add(id);
+        else selectedTotalAccounts.delete(id);
+        recomputeGrandTotals();
+      });
+      container.appendChild(label);
+    }
   }
 
   window.addHolding = function (acct) {
@@ -1457,7 +1544,7 @@
       grandTotalVal += accountTotalVal;
     }
 
-    updateGrandTotalsDOM(grandTotalCost, grandTotalVal);
+    recomputeGrandTotals();
   }
 
   async function fetchLivePrices() {
@@ -2490,6 +2577,7 @@
     loadState();
     populateTickerOptions();
     populateAccountOptions();
+    renderTotalAccountFilter();
   });
 </script>
 </body>
